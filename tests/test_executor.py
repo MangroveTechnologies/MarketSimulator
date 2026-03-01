@@ -97,13 +97,13 @@ class TestExecutorLifecycle:
     def setup_method(self):
         self._tmpdir = tempfile.mkdtemp()
         self._orig_data = settings.data_dir
-        self._orig_mangrove = settings.mangrove_data_dir
+        self._orig_ohlcv = settings.ohlcv_dir
         settings.data_dir = self._tmpdir
-        settings.mangrove_data_dir = self._tmpdir  # point to same dir for testing
+        settings.ohlcv_dir = self._tmpdir
 
     def teardown_method(self):
         settings.data_dir = self._orig_data
-        settings.mangrove_data_dir = self._orig_mangrove
+        settings.ohlcv_dir = self._orig_ohlcv
         import shutil
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 

@@ -209,7 +209,7 @@ def launch_experiment(
     # Compute data file hashes
     for ds in config.datasets:
         if not ds.hash:
-            file_path = os.path.join(settings.mangrove_data_dir, ds.file)
+            file_path = os.path.join(settings.ohlcv_dir, ds.file)
             if os.path.exists(file_path):
                 ds.hash = compute_file_hash(file_path)
 

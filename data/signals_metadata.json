@@ -1,0 +1,3681 @@
+{
+  "rsi_overbought": {
+    "rule_name": "rsi_overbought",
+    "description": "Check if RSI is above the overbought threshold. RSI values above 70 typically indicate overbought conditions, suggesting the asset may be due for a pullback. In crypto markets, consider higher thresholds (80/20) during strong trends.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "RSI calculation window",
+        "min": 2,
+        "max": 100,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": 50.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 70.0
+      }
+    }
+  },
+  "rsi_oversold": {
+    "rule_name": "rsi_oversold",
+    "description": "Check if RSI is below the oversold threshold. RSI values below 30 typically indicate oversold conditions, suggesting the asset may be due for a bounce. In crypto markets, consider higher thresholds (80/20) during strong trends.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "RSI calculation window",
+        "min": 2,
+        "max": 100,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": 0.0,
+        "max": 50.0,
+        "optional": true,
+        "default": 30.0
+      }
+    }
+  },
+  "rsi_cross_up": {
+    "rule_name": "rsi_cross_up",
+    "description": "Check if RSI crosses above a threshold level. Returns True when RSI was at or below the threshold in the previous bar and is now above the threshold in the current bar. In crypto markets, consider higher thresholds (80/20) during strong trends.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "RSI calculation window",
+        "min": 2,
+        "max": 100,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Threshold level to cross above",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 50.0
+      }
+    }
+  },
+  "rsi_cross_down": {
+    "rule_name": "rsi_cross_down",
+    "description": "Check if RSI crosses below a threshold level. Returns True when RSI was at or above the threshold in the previous bar and is now below the threshold in the current bar. In crypto markets, consider higher thresholds (80/20) during strong trends.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "RSI calculation window",
+        "min": 2,
+        "max": 100,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Threshold level to cross below",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 50.0
+      }
+    }
+  },
+  "stoch_overbought": {
+    "rule_name": "stoch_overbought",
+    "description": "Check if Stochastic %K is above the overbought threshold.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "%K period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "smooth_window": {
+        "type": "int",
+        "description": "%K smoothing period",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 3
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": 70.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 80.0
+      }
+    }
+  },
+  "stoch_oversold": {
+    "rule_name": "stoch_oversold",
+    "description": "Check if Stochastic %K is below the oversold threshold.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "%K period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "smooth_window": {
+        "type": "int",
+        "description": "%K smoothing period",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 3
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": 0.0,
+        "max": 30.0,
+        "optional": true,
+        "default": 20.0
+      }
+    }
+  },
+  "williams_r_overbought": {
+    "rule_name": "williams_r_overbought",
+    "description": "Check if Williams %R is above the overbought threshold. Williams %R ranges from -100 to 0. Values above -20 indicate overbought.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback window",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": -30.0,
+        "max": 0.0,
+        "optional": true,
+        "default": -20.0
+      }
+    }
+  },
+  "williams_r_oversold": {
+    "rule_name": "williams_r_oversold",
+    "description": "Check if Williams %R is below the oversold threshold. Williams %R ranges from -100 to 0. Values below -80 indicate oversold.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback window",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": -100.0,
+        "max": -70.0,
+        "optional": true,
+        "default": -80.0
+      }
+    }
+  },
+  "tsi_bullish": {
+    "rule_name": "tsi_bullish",
+    "description": "Check if True Strength Index indicates bullish momentum. TSI above zero indicates bullish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 25
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 25,
+        "optional": true,
+        "default": 13
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bullish threshold",
+        "min": -50.0,
+        "max": 50.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "tsi_bearish": {
+    "rule_name": "tsi_bearish",
+    "description": "Check if True Strength Index indicates bearish momentum. TSI below zero indicates bearish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 25
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 25,
+        "optional": true,
+        "default": 13
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bearish threshold",
+        "min": -50.0,
+        "max": 50.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "uo_overbought": {
+    "rule_name": "uo_overbought",
+    "description": "Check if Ultimate Oscillator indicates overbought condition.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window_short": {
+        "type": "int",
+        "description": "Short window",
+        "min": 3,
+        "max": 20,
+        "optional": true,
+        "default": 7
+      },
+      "window_medium": {
+        "type": "int",
+        "description": "Medium window",
+        "min": 7,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "window_long": {
+        "type": "int",
+        "description": "Long window",
+        "min": 14,
+        "max": 50,
+        "optional": true,
+        "default": 28
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": 60.0,
+        "max": 90.0,
+        "optional": true,
+        "default": 70.0
+      }
+    }
+  },
+  "uo_oversold": {
+    "rule_name": "uo_oversold",
+    "description": "Check if Ultimate Oscillator indicates oversold condition.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window_short": {
+        "type": "int",
+        "description": "Short window",
+        "min": 3,
+        "max": 20,
+        "optional": true,
+        "default": 7
+      },
+      "window_medium": {
+        "type": "int",
+        "description": "Medium window",
+        "min": 7,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "window_long": {
+        "type": "int",
+        "description": "Long window",
+        "min": 14,
+        "max": 50,
+        "optional": true,
+        "default": 28
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": 10.0,
+        "max": 40.0,
+        "optional": true,
+        "default": 30.0
+      }
+    }
+  },
+  "kama_cross_up": {
+    "rule_name": "kama_cross_up",
+    "description": "Check if price crosses above KAMA (bullish signal).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Efficiency ratio period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 10
+      },
+      "pow1": {
+        "type": "int",
+        "description": "Fast smoothing constant",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 2
+      },
+      "pow2": {
+        "type": "int",
+        "description": "Slow smoothing constant",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 30
+      }
+    }
+  },
+  "kama_cross_down": {
+    "rule_name": "kama_cross_down",
+    "description": "Check if price crosses below KAMA (bearish signal).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Efficiency ratio period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 10
+      },
+      "pow1": {
+        "type": "int",
+        "description": "Fast smoothing constant",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 2
+      },
+      "pow2": {
+        "type": "int",
+        "description": "Slow smoothing constant",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 30
+      }
+    }
+  },
+  "roc_positive": {
+    "rule_name": "roc_positive",
+    "description": "Check if Rate of Change indicates positive momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "ROC period",
+        "min": 1,
+        "max": 50,
+        "optional": true,
+        "default": 12
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Positive momentum threshold",
+        "min": -10.0,
+        "max": 10.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "roc_negative": {
+    "rule_name": "roc_negative",
+    "description": "Check if Rate of Change indicates negative momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "ROC period",
+        "min": 1,
+        "max": 50,
+        "optional": true,
+        "default": 12
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Negative momentum threshold",
+        "min": -10.0,
+        "max": 10.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "roc_momentum_shift": {
+    "rule_name": "roc_momentum_shift",
+    "description": "Check if ROC crosses zero (momentum shift).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "ROC period",
+        "min": 1,
+        "max": 50,
+        "optional": true,
+        "default": 12
+      },
+      "direction": {
+        "type": "str",
+        "description": "Direction: 'bullish' for cross above zero, 'bearish' for cross below",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "ao_bullish": {
+    "rule_name": "ao_bullish",
+    "description": "Check if Awesome Oscillator indicates bullish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast SMA window",
+        "min": 2,
+        "max": 15,
+        "optional": true,
+        "default": 5
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow SMA window",
+        "min": 20,
+        "max": 60,
+        "optional": true,
+        "default": 34
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bullish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "ao_bearish": {
+    "rule_name": "ao_bearish",
+    "description": "Check if Awesome Oscillator indicates bearish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast SMA window",
+        "min": 2,
+        "max": 15,
+        "optional": true,
+        "default": 5
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow SMA window",
+        "min": 20,
+        "max": 60,
+        "optional": true,
+        "default": 34
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bearish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "ao_zero_cross": {
+    "rule_name": "ao_zero_cross",
+    "description": "Check if Awesome Oscillator crosses zero line.",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast SMA window",
+        "min": 2,
+        "max": 15,
+        "optional": true,
+        "default": 5
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow SMA window",
+        "min": 20,
+        "max": 60,
+        "optional": true,
+        "default": 34
+      },
+      "direction": {
+        "type": "str",
+        "description": "Direction: 'bullish' for cross above, 'bearish' for cross below",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "stochrsi_overbought": {
+    "rule_name": "stochrsi_overbought",
+    "description": "Check if Stochastic RSI indicates overbought condition. In crypto markets, consider adjusting thresholds during strong trends.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "RSI period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "smooth1": {
+        "type": "int",
+        "description": "Stochastic %K smoothing",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 3
+      },
+      "smooth2": {
+        "type": "int",
+        "description": "Stochastic %D smoothing",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 3
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold (0-1 scale)",
+        "min": 0.6,
+        "max": 1.0,
+        "optional": true,
+        "default": 0.8
+      }
+    }
+  },
+  "stochrsi_oversold": {
+    "rule_name": "stochrsi_oversold",
+    "description": "Check if Stochastic RSI indicates oversold condition. In crypto markets, consider adjusting thresholds during strong trends.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "RSI period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "smooth1": {
+        "type": "int",
+        "description": "Stochastic %K smoothing",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 3
+      },
+      "smooth2": {
+        "type": "int",
+        "description": "Stochastic %D smoothing",
+        "min": 1,
+        "max": 10,
+        "optional": true,
+        "default": 3
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold (0-1 scale)",
+        "min": 0.0,
+        "max": 0.4,
+        "optional": true,
+        "default": 0.2
+      }
+    }
+  },
+  "ppo_bullish_cross": {
+    "rule_name": "ppo_bullish_cross",
+    "description": "Check if PPO crosses above signal line (bullish).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 15,
+        "max": 50,
+        "optional": true,
+        "default": 26
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 12
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line period",
+        "min": 3,
+        "max": 15,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "ppo_bearish_cross": {
+    "rule_name": "ppo_bearish_cross",
+    "description": "Check if PPO crosses below signal line (bearish).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 15,
+        "max": 50,
+        "optional": true,
+        "default": 26
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 12
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line period",
+        "min": 3,
+        "max": 15,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "pvo_bullish_cross": {
+    "rule_name": "pvo_bullish_cross",
+    "description": "Check if PVO crosses above signal line (bullish volume).",
+    "type": "TRIGGER",
+    "requires": [
+      "Volume"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 15,
+        "max": 50,
+        "optional": true,
+        "default": 26
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 12
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line period",
+        "min": 3,
+        "max": 15,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "pvo_bearish_cross": {
+    "rule_name": "pvo_bearish_cross",
+    "description": "Check if PVO crosses below signal line (bearish volume).",
+    "type": "TRIGGER",
+    "requires": [
+      "Volume"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 15,
+        "max": 50,
+        "optional": true,
+        "default": 26
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 12
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line period",
+        "min": 3,
+        "max": 15,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "is_above_sma": {
+    "rule_name": "is_above_sma",
+    "description": "Check if the current price is above the Simple Moving Average. Uses SMA indicator to calculate the SMA for the given window and returns True if the most recent close price is strictly greater than the SMA value. Returns False if insufficient data is available. Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "SMA window in bars",
+        "min": 1,
+        "max": 1000,
+        "optional": false
+      }
+    }
+  },
+  "sma_crossover": {
+    "rule_name": "sma_crossover",
+    "description": "Detect an SMA crossover signal with configurable direction (bullish or bearish). Uses SMA indicator to calculate window_fast and window_slow SMAs. Returns True when a crossover is detected in the specified direction. Bullish crossover (golden cross): window_fast SMA crosses above window_slow SMA Bearish crossover (death cross): window_fast SMA crosses below window_slow SMA The crossover detection compares the previous and current bars: - Bullish: prev window_fast <= prev window_slow AND current window_fast > current window_slow - Bearish: prev window_fast >= prev window_slow AND current window_fast < current window_slow Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast SMA window in bars",
+        "min": 1,
+        "max": 500,
+        "optional": false
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow SMA window in bars",
+        "min": 1,
+        "max": 1000,
+        "optional": false
+      },
+      "direction": {
+        "type": "str",
+        "description": "Crossover direction, 'bullish' or 'bearish'",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "sma_cross_up": {
+    "rule_name": "sma_cross_up",
+    "description": "Detect a bullish SMA crossover as an entry signal. Returns True when the window_fast SMA crosses above the window_slow SMA (golden cross). This is a momentum-driven entry signal, indicating a transition from bearish to bullish momentum. Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets. Note: This is a backwards-compatible wrapper around sma_crossover.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast SMA window in bars",
+        "min": 1,
+        "max": 500,
+        "optional": false
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow SMA window in bars",
+        "min": 1,
+        "max": 1000,
+        "optional": false
+      }
+    }
+  },
+  "sma_cross_down": {
+    "rule_name": "sma_cross_down",
+    "description": "Detect a bearish SMA crossover as an exit signal. Returns True when the window_fast SMA crosses below the window_slow SMA (death cross). This is a momentum-driven exit signal, indicating a transition from bullish to bearish momentum. Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets. Note: This is a backwards-compatible wrapper around sma_crossover.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast SMA window in bars",
+        "min": 1,
+        "max": 500,
+        "optional": false
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow SMA window in bars",
+        "min": 1,
+        "max": 1000,
+        "optional": false
+      }
+    }
+  },
+  "macd_bullish_cross": {
+    "rule_name": "macd_bullish_cross",
+    "description": "Detect MACD bullish crossover (MACD line crosses above signal line). A bullish MACD crossover occurs when the MACD line crosses above the signal line, indicating potential upward momentum. Crypto's high volatility may produce frequent signals; use with trend confirmation.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 12
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA window",
+        "min": 10,
+        "max": 100,
+        "optional": true,
+        "default": 26
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line EMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "macd_bearish_cross": {
+    "rule_name": "macd_bearish_cross",
+    "description": "Detect MACD bearish crossover (MACD line crosses below signal line). A bearish MACD crossover occurs when the MACD line crosses below the signal line, indicating potential downward momentum. Crypto's high volatility may produce frequent signals; use with trend confirmation.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 12
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA window",
+        "min": 10,
+        "max": 100,
+        "optional": true,
+        "default": 26
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line EMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "macd_positive": {
+    "rule_name": "macd_positive",
+    "description": "Check if MACD histogram is positive (bullish momentum). Crypto's high volatility may produce frequent signals; use with trend confirmation.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 12
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA window",
+        "min": 10,
+        "max": 100,
+        "optional": true,
+        "default": 26
+      },
+      "window_sign": {
+        "type": "int",
+        "description": "Signal line EMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "ema_cross_up": {
+    "rule_name": "ema_cross_up",
+    "description": "Detect bullish EMA crossover (fast EMA crosses above slow EMA). Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA window",
+        "min": 2,
+        "max": 100,
+        "optional": true,
+        "default": 9
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA window",
+        "min": 5,
+        "max": 200,
+        "optional": true,
+        "default": 21
+      }
+    }
+  },
+  "ema_cross_down": {
+    "rule_name": "ema_cross_down",
+    "description": "Detect bearish EMA crossover (fast EMA crosses below slow EMA). Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA window",
+        "min": 2,
+        "max": 100,
+        "optional": true,
+        "default": 9
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA window",
+        "min": 5,
+        "max": 200,
+        "optional": true,
+        "default": 21
+      }
+    }
+  },
+  "ema_crossover": {
+    "rule_name": "ema_crossover",
+    "description": "Detect an EMA crossover signal with configurable direction (bullish or bearish). Uses EMA indicator to calculate window_fast and window_slow EMAs. Returns True when a crossover is detected in the specified direction. Bullish crossover: window_fast EMA crosses above window_slow EMA Bearish crossover: window_fast EMA crosses below window_slow EMA The crossover detection compares the previous and current bars: - Bullish: prev window_fast <= prev window_slow AND current window_fast > current window_slow - Bearish: prev window_fast >= prev window_slow AND current window_fast < current window_slow Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA window in bars",
+        "min": 1,
+        "max": 500,
+        "optional": false
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA window in bars",
+        "min": 1,
+        "max": 1000,
+        "optional": false
+      },
+      "direction": {
+        "type": "str",
+        "description": "Crossover direction, 'bullish' or 'bearish'",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "price_above_ema": {
+    "rule_name": "price_above_ema",
+    "description": "Check if price is above the EMA. Common periods: 9/21 (short-term), 50/200 (long-term). Adjust for crypto's 24/7 markets.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA window",
+        "min": 2,
+        "max": 200,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "adx_strong_trend": {
+    "rule_name": "adx_strong_trend",
+    "description": "Check if ADX indicates a strong trend. ADX values above 25 typically indicate a strong trend (either up or down).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "ADX period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Trend strength threshold",
+        "min": 15.0,
+        "max": 50.0,
+        "optional": true,
+        "default": 25.0
+      }
+    }
+  },
+  "adx_bullish_di": {
+    "rule_name": "adx_bullish_di",
+    "description": "Check if +DI is greater than -DI (bullish directional movement). When +DI > -DI, bulls have the upper hand.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "ADX period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      }
+    }
+  },
+  "aroon_up_trend": {
+    "rule_name": "aroon_up_trend",
+    "description": "Check if Aroon Up indicates strong uptrend.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 25
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Strong trend threshold",
+        "min": 50.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 70.0
+      }
+    }
+  },
+  "aroon_down_trend": {
+    "rule_name": "aroon_down_trend",
+    "description": "Check if Aroon Down indicates strong downtrend.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 25
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Strong trend threshold",
+        "min": 50.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 70.0
+      }
+    }
+  },
+  "aroon_crossover": {
+    "rule_name": "aroon_crossover",
+    "description": "Check if Aroon lines cross (trend change signal).",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 25
+      },
+      "direction": {
+        "type": "str",
+        "description": "Crossover direction, 'bullish' or 'bearish'",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "wma_cross_up": {
+    "rule_name": "wma_cross_up",
+    "description": "Check if fast WMA crosses above slow WMA (bullish).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast WMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 9
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow WMA window",
+        "min": 10,
+        "max": 100,
+        "optional": true,
+        "default": 21
+      }
+    }
+  },
+  "wma_cross_down": {
+    "rule_name": "wma_cross_down",
+    "description": "Check if fast WMA crosses below slow WMA (bearish).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast WMA window",
+        "min": 2,
+        "max": 50,
+        "optional": true,
+        "default": 9
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Slow WMA window",
+        "min": 10,
+        "max": 100,
+        "optional": true,
+        "default": 21
+      }
+    }
+  },
+  "trix_bullish": {
+    "rule_name": "trix_bullish",
+    "description": "Check if TRIX indicates bullish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "TRIX period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 15
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bullish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "trix_bearish": {
+    "rule_name": "trix_bearish",
+    "description": "Check if TRIX indicates bearish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "TRIX period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 15
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bearish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "mass_reversal_signal": {
+    "rule_name": "mass_reversal_signal",
+    "description": "Check if Mass Index signals potential reversal (reversal bulge). A reversal bulge occurs when Mass Index rises above 27 then falls below 26.5.",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 5,
+        "max": 15,
+        "optional": true,
+        "default": 9
+      },
+      "window_slow": {
+        "type": "int",
+        "description": "Sum period",
+        "min": 15,
+        "max": 40,
+        "optional": true,
+        "default": 25
+      },
+      "threshold_high": {
+        "type": "float",
+        "description": "Upper threshold",
+        "min": 25.0,
+        "max": 30.0,
+        "optional": true,
+        "default": 27.0
+      },
+      "threshold_low": {
+        "type": "float",
+        "description": "Lower threshold",
+        "min": 24.0,
+        "max": 27.0,
+        "optional": true,
+        "default": 26.5
+      }
+    }
+  },
+  "ichimoku_bullish": {
+    "rule_name": "ichimoku_bullish",
+    "description": "Check if Ichimoku indicates bullish signal (price above cloud).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_tenkan": {
+        "type": "int",
+        "description": "Tenkan-sen (conversion line) window",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 9
+      },
+      "window_kijun": {
+        "type": "int",
+        "description": "Kijun-sen (base line) window",
+        "min": 15,
+        "max": 40,
+        "optional": true,
+        "default": 26
+      },
+      "window_senkou": {
+        "type": "int",
+        "description": "Senkou Span B (leading span B) window",
+        "min": 30,
+        "max": 70,
+        "optional": true,
+        "default": 52
+      }
+    }
+  },
+  "ichimoku_bearish": {
+    "rule_name": "ichimoku_bearish",
+    "description": "Check if Ichimoku indicates bearish signal (price below cloud).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_tenkan": {
+        "type": "int",
+        "description": "Tenkan-sen (conversion line) window",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 9
+      },
+      "window_kijun": {
+        "type": "int",
+        "description": "Kijun-sen (base line) window",
+        "min": 15,
+        "max": 40,
+        "optional": true,
+        "default": 26
+      },
+      "window_senkou": {
+        "type": "int",
+        "description": "Senkou Span B (leading span B) window",
+        "min": 30,
+        "max": 70,
+        "optional": true,
+        "default": 52
+      }
+    }
+  },
+  "ichimoku_tk_cross": {
+    "rule_name": "ichimoku_tk_cross",
+    "description": "Check if Tenkan-sen crosses Kijun-sen (TK cross).",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "window_tenkan": {
+        "type": "int",
+        "description": "Tenkan-sen (conversion line) window",
+        "min": 5,
+        "max": 20,
+        "optional": true,
+        "default": 9
+      },
+      "window_kijun": {
+        "type": "int",
+        "description": "Kijun-sen (base line) window",
+        "min": 15,
+        "max": 40,
+        "optional": true,
+        "default": 26
+      },
+      "window_senkou": {
+        "type": "int",
+        "description": "Senkou Span B (leading span B) window",
+        "min": 30,
+        "max": 70,
+        "optional": true,
+        "default": 52
+      },
+      "direction": {
+        "type": "str",
+        "description": "Crossover direction, 'bullish' or 'bearish'",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "kst_bullish_cross": {
+    "rule_name": "kst_bullish_cross",
+    "description": "Check if KST crosses above signal line (bullish).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "roc1": {
+        "type": "int",
+        "description": "ROC1 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 10
+      },
+      "roc2": {
+        "type": "int",
+        "description": "ROC2 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 15
+      },
+      "roc3": {
+        "type": "int",
+        "description": "ROC3 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 20
+      },
+      "roc4": {
+        "type": "int",
+        "description": "ROC4 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 30
+      },
+      "window_sma1": {
+        "type": "int",
+        "description": "SMA1 smoothing window for ROC1",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 10
+      },
+      "window_sma2": {
+        "type": "int",
+        "description": "SMA2 smoothing window for ROC2",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 10
+      },
+      "window_sma3": {
+        "type": "int",
+        "description": "SMA3 smoothing window for ROC3",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 10
+      },
+      "window_sma4": {
+        "type": "int",
+        "description": "SMA4 smoothing window for ROC4",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 15
+      },
+      "nsig": {
+        "type": "int",
+        "description": "Signal line period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "kst_bearish_cross": {
+    "rule_name": "kst_bearish_cross",
+    "description": "Check if KST crosses below signal line (bearish).",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "roc1": {
+        "type": "int",
+        "description": "ROC1 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 10
+      },
+      "roc2": {
+        "type": "int",
+        "description": "ROC2 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 15
+      },
+      "roc3": {
+        "type": "int",
+        "description": "ROC3 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 20
+      },
+      "roc4": {
+        "type": "int",
+        "description": "ROC4 period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 30
+      },
+      "window_sma1": {
+        "type": "int",
+        "description": "SMA1 smoothing window for ROC1",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 10
+      },
+      "window_sma2": {
+        "type": "int",
+        "description": "SMA2 smoothing window for ROC2",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 10
+      },
+      "window_sma3": {
+        "type": "int",
+        "description": "SMA3 smoothing window for ROC3",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 10
+      },
+      "window_sma4": {
+        "type": "int",
+        "description": "SMA4 smoothing window for ROC4",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 15
+      },
+      "nsig": {
+        "type": "int",
+        "description": "Signal line period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 9
+      }
+    }
+  },
+  "dpo_positive": {
+    "rule_name": "dpo_positive",
+    "description": "Check if DPO is positive (price above detrended average).",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "DPO period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "dpo_negative": {
+    "rule_name": "dpo_negative",
+    "description": "Check if DPO is negative (price below detrended average).",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "DPO period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "cci_overbought": {
+    "rule_name": "cci_overbought",
+    "description": "Check if CCI indicates overbought condition.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "CCI period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      },
+      "constant": {
+        "type": "float",
+        "description": "CCI constant",
+        "min": 0.001,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.015
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": 50.0,
+        "max": 200.0,
+        "optional": true,
+        "default": 100.0
+      }
+    }
+  },
+  "cci_oversold": {
+    "rule_name": "cci_oversold",
+    "description": "Check if CCI indicates oversold condition.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "CCI period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      },
+      "constant": {
+        "type": "float",
+        "description": "CCI constant",
+        "min": 0.001,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.015
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": -200.0,
+        "max": -50.0,
+        "optional": true,
+        "default": -100.0
+      }
+    }
+  },
+  "vortex_bullish": {
+    "rule_name": "vortex_bullish",
+    "description": "Check if Vortex Indicator shows bullish trend (+VI > -VI).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Vortex period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      }
+    }
+  },
+  "vortex_bearish": {
+    "rule_name": "vortex_bearish",
+    "description": "Check if Vortex Indicator shows bearish trend (-VI > +VI).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Vortex period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      }
+    }
+  },
+  "vortex_crossover": {
+    "rule_name": "vortex_crossover",
+    "description": "Check if Vortex lines cross (trend change).",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Vortex period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "direction": {
+        "type": "str",
+        "description": "Crossover direction, 'bullish' (+VI crosses above -VI) or 'bearish'",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "psar_bullish": {
+    "rule_name": "psar_bullish",
+    "description": "Check if PSAR indicates bullish trend (PSAR below price).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "step": {
+        "type": "float",
+        "description": "PSAR acceleration factor step",
+        "min": 0.01,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.02
+      },
+      "max_step": {
+        "type": "float",
+        "description": "PSAR max acceleration factor",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.2
+      }
+    }
+  },
+  "psar_bearish": {
+    "rule_name": "psar_bearish",
+    "description": "Check if PSAR indicates bearish trend (PSAR above price).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "step": {
+        "type": "float",
+        "description": "PSAR acceleration factor step",
+        "min": 0.01,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.02
+      },
+      "max_step": {
+        "type": "float",
+        "description": "PSAR max acceleration factor",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.2
+      }
+    }
+  },
+  "psar_reversal": {
+    "rule_name": "psar_reversal",
+    "description": "Check if PSAR flips sides (potential reversal).",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "step": {
+        "type": "float",
+        "description": "PSAR acceleration factor step",
+        "min": 0.01,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.02
+      },
+      "max_step": {
+        "type": "float",
+        "description": "PSAR max acceleration factor",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.2
+      },
+      "direction": {
+        "type": "str",
+        "description": "Reversal direction, 'bullish' (flip to below price) or 'bearish'",
+        "optional": true,
+        "default": "bullish"
+      }
+    }
+  },
+  "stc_overbought": {
+    "rule_name": "stc_overbought",
+    "description": "Check if STC indicates overbought condition.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 50
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 23
+      },
+      "cycle": {
+        "type": "int",
+        "description": "Cycle period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 10
+      },
+      "smooth1": {
+        "type": "int",
+        "description": "First smoothing period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 3
+      },
+      "smooth2": {
+        "type": "int",
+        "description": "Second smoothing period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 3
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 75.0
+      }
+    }
+  },
+  "stc_oversold": {
+    "rule_name": "stc_oversold",
+    "description": "Check if STC indicates oversold condition.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window_slow": {
+        "type": "int",
+        "description": "Slow EMA period",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 50
+      },
+      "window_fast": {
+        "type": "int",
+        "description": "Fast EMA period",
+        "min": 2,
+        "max": 500,
+        "optional": true,
+        "default": 23
+      },
+      "cycle": {
+        "type": "int",
+        "description": "Cycle period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 10
+      },
+      "smooth1": {
+        "type": "int",
+        "description": "First smoothing period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 3
+      },
+      "smooth2": {
+        "type": "int",
+        "description": "Second smoothing period",
+        "min": 1,
+        "max": 1000,
+        "optional": true,
+        "default": 3
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 25.0
+      }
+    }
+  },
+  "adi_bullish": {
+    "rule_name": "adi_bullish",
+    "description": "Check if ADI (Accumulation/Distribution) is rising (bullish volume).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback for trend",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "adi_bearish": {
+    "rule_name": "adi_bearish",
+    "description": "Check if ADI (Accumulation/Distribution) is falling (bearish volume).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback for trend",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "obv_bullish": {
+    "rule_name": "obv_bullish",
+    "description": "Check if OBV is rising (bullish volume confirmation).",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback for trend",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "obv_bearish": {
+    "rule_name": "obv_bearish",
+    "description": "Check if OBV is falling (bearish volume confirmation).",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback for trend",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "cmf_bullish": {
+    "rule_name": "cmf_bullish",
+    "description": "Check if CMF (Chaikin Money Flow) indicates buying pressure.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "CMF period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bullish threshold",
+        "min": -1.0,
+        "max": 1.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "cmf_bearish": {
+    "rule_name": "cmf_bearish",
+    "description": "Check if CMF (Chaikin Money Flow) indicates selling pressure.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "CMF period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bearish threshold",
+        "min": -1.0,
+        "max": 1.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "force_bullish": {
+    "rule_name": "force_bullish",
+    "description": "Check if Force Index indicates bullish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA period for smoothing",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 13
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bullish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "force_bearish": {
+    "rule_name": "force_bearish",
+    "description": "Check if Force Index indicates bearish momentum.",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA period for smoothing",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 13
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bearish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "eom_bullish": {
+    "rule_name": "eom_bullish",
+    "description": "Check if Ease of Movement indicates bullish (easy upward movement).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EOM period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bullish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "eom_bearish": {
+    "rule_name": "eom_bearish",
+    "description": "Check if Ease of Movement indicates bearish (easy downward movement).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EOM period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Bearish threshold",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "vpt_bullish": {
+    "rule_name": "vpt_bullish",
+    "description": "Check if VPT (Volume Price Trend) is rising.",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Lookback for trend",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "vpt_bearish": {
+    "rule_name": "vpt_bearish",
+    "description": "Check if VPT (Volume Price Trend) is falling.",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Lookback for trend",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "nvi_bullish": {
+    "rule_name": "nvi_bullish",
+    "description": "Check if NVI (Negative Volume Index) indicates smart money buying. NVI above its moving average suggests smart money accumulation.",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA period for signal",
+        "min": 100,
+        "max": 500,
+        "optional": true,
+        "default": 255
+      }
+    }
+  },
+  "nvi_bearish": {
+    "rule_name": "nvi_bearish",
+    "description": "Check if NVI (Negative Volume Index) indicates smart money selling. NVI below its moving average suggests smart money distribution.",
+    "type": "FILTER",
+    "requires": [
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA period for signal",
+        "min": 100,
+        "max": 500,
+        "optional": true,
+        "default": 255
+      }
+    }
+  },
+  "mfi_overbought": {
+    "rule_name": "mfi_overbought",
+    "description": "Check if MFI (Money Flow Index) indicates overbought condition.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "MFI period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Overbought threshold",
+        "min": 70.0,
+        "max": 95.0,
+        "optional": true,
+        "default": 80.0
+      }
+    }
+  },
+  "mfi_oversold": {
+    "rule_name": "mfi_oversold",
+    "description": "Check if MFI (Money Flow Index) indicates oversold condition.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "MFI period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Oversold threshold",
+        "min": 5.0,
+        "max": 30.0,
+        "optional": true,
+        "default": 20.0
+      }
+    }
+  },
+  "vwap_above": {
+    "rule_name": "vwap_above",
+    "description": "Check if price is above VWAP (bullish bias).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "VWAP period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      }
+    }
+  },
+  "vwap_below": {
+    "rule_name": "vwap_below",
+    "description": "Check if price is below VWAP (bearish bias).",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close",
+      "Volume"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "VWAP period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      }
+    }
+  },
+  "daily_return_positive": {
+    "rule_name": "daily_return_positive",
+    "description": "Check if daily return is positive.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "threshold": {
+        "type": "float",
+        "description": "Minimum return threshold in percent",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "daily_return_negative": {
+    "rule_name": "daily_return_negative",
+    "description": "Check if daily return is negative.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "threshold": {
+        "type": "float",
+        "description": "Maximum return threshold in percent",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "cumulative_return_positive": {
+    "rule_name": "cumulative_return_positive",
+    "description": "Check if cumulative return from start is positive.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "threshold": {
+        "type": "float",
+        "description": "Minimum cumulative return in percent",
+        "min": 0.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 0.0
+      }
+    }
+  },
+  "cumulative_return_target": {
+    "rule_name": "cumulative_return_target",
+    "description": "Check if cumulative return has reached target.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "target": {
+        "type": "float",
+        "description": "Target cumulative return in percent",
+        "min": 1.0,
+        "max": 100.0,
+        "optional": true,
+        "default": 10.0
+      }
+    }
+  },
+  "bb_upper_breakout": {
+    "rule_name": "bb_upper_breakout",
+    "description": "Detect price breaking above the upper Bollinger Band. Fires on the bar where price crosses above the upper band, not while price remains above it. Crypto assets frequently test bands during high volatility; use with volume confirmation.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "MA period for center band",
+        "min": 5,
+        "max": 100,
+        "optional": true,
+        "default": 20
+      },
+      "window_dev": {
+        "type": "int",
+        "description": "Standard deviation multiplier",
+        "min": 1,
+        "max": 5,
+        "optional": true,
+        "default": 2
+      }
+    }
+  },
+  "bb_lower_breakout": {
+    "rule_name": "bb_lower_breakout",
+    "description": "Detect price breaking below the lower Bollinger Band. Fires on the bar where price crosses below the lower band, not while price remains below it. Crypto assets frequently test bands during high volatility; use with volume confirmation.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "MA period for center band",
+        "min": 5,
+        "max": 100,
+        "optional": true,
+        "default": 20
+      },
+      "window_dev": {
+        "type": "int",
+        "description": "Standard deviation multiplier",
+        "min": 1,
+        "max": 5,
+        "optional": true,
+        "default": 2
+      }
+    }
+  },
+  "bb_squeeze": {
+    "rule_name": "bb_squeeze",
+    "description": "Detect Bollinger Band squeeze onset (low volatility, potential breakout). Fires on the bar where band width drops below the threshold, not while it remains below.",
+    "type": "TRIGGER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "MA period for center band",
+        "min": 5,
+        "max": 100,
+        "optional": true,
+        "default": 20
+      },
+      "window_dev": {
+        "type": "int",
+        "description": "Standard deviation multiplier",
+        "min": 1,
+        "max": 5,
+        "optional": true,
+        "default": 2
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Band width percentage threshold",
+        "min": 1.0,
+        "max": 20.0,
+        "optional": true,
+        "default": 5.0
+      }
+    }
+  },
+  "atr_high_volatility": {
+    "rule_name": "atr_high_volatility",
+    "description": "Check if ATR indicates high volatility relative to price. High volatility (ATR as % of close > threshold) can indicate potential trading opportunities or increased risk.",
+    "type": "FILTER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "ATR period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "threshold_pct": {
+        "type": "float",
+        "description": "ATR as percentage of close threshold",
+        "min": 0.5,
+        "max": 10.0,
+        "optional": true,
+        "default": 3.0
+      }
+    }
+  },
+  "kc_upper_breakout": {
+    "rule_name": "kc_upper_breakout",
+    "description": "Detect price breaking above upper Keltner Channel band. Fires on the bar where price crosses above the upper band.",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      },
+      "window_atr": {
+        "type": "int",
+        "description": "ATR period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 10
+      },
+      "multiplier": {
+        "type": "float",
+        "description": "ATR multiplier for band width",
+        "min": 0.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "original_version": {
+        "type": "bool",
+        "description": "Use original Keltner Channel formula instead of EMA+ATR",
+        "optional": true,
+        "default": false
+      }
+    }
+  },
+  "kc_lower_breakout": {
+    "rule_name": "kc_lower_breakout",
+    "description": "Detect price breaking below lower Keltner Channel band. Fires on the bar where price crosses below the lower band.",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "EMA period",
+        "min": 10,
+        "max": 50,
+        "optional": true,
+        "default": 20
+      },
+      "window_atr": {
+        "type": "int",
+        "description": "ATR period",
+        "min": 5,
+        "max": 30,
+        "optional": true,
+        "default": 10
+      },
+      "multiplier": {
+        "type": "float",
+        "description": "ATR multiplier for band width",
+        "min": 0.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "original_version": {
+        "type": "bool",
+        "description": "Use original Keltner Channel formula instead of EMA+ATR",
+        "optional": true,
+        "default": false
+      }
+    }
+  },
+  "dc_upper_breakout": {
+    "rule_name": "dc_upper_breakout",
+    "description": "Detect price breaking above upper Donchian Channel (new high). Fires on the bar where price crosses above the upper band.",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 5,
+        "max": 100,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "dc_lower_breakout": {
+    "rule_name": "dc_lower_breakout",
+    "description": "Detect price breaking below lower Donchian Channel (new low). Fires on the bar where price crosses below the lower band.",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 5,
+        "max": 100,
+        "optional": true,
+        "default": 20
+      }
+    }
+  },
+  "ulcer_high_risk": {
+    "rule_name": "ulcer_high_risk",
+    "description": "Check if Ulcer Index indicates high downside risk. Higher Ulcer Index values indicate greater downside volatility.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "High risk threshold",
+        "min": 5.0,
+        "max": 30.0,
+        "optional": true,
+        "default": 10.0
+      }
+    }
+  },
+  "ulcer_low_risk": {
+    "rule_name": "ulcer_low_risk",
+    "description": "Check if Ulcer Index indicates low downside risk. Lower Ulcer Index values indicate lower downside volatility.",
+    "type": "FILTER",
+    "requires": [
+      "Close"
+    ],
+    "params": {
+      "window": {
+        "type": "int",
+        "description": "Lookback period",
+        "min": 5,
+        "max": 50,
+        "optional": true,
+        "default": 14
+      },
+      "threshold": {
+        "type": "float",
+        "description": "Low risk threshold",
+        "min": 1.0,
+        "max": 15.0,
+        "optional": true,
+        "default": 5.0
+      }
+    }
+  },
+  "doji_trigger": {
+    "rule_name": "doji_trigger",
+    "description": "Check if a doji pattern is detected on the current bar. A doji forms when open and close are nearly equal relative to the candle's range, signaling indecision. References: [NISON], [KB-07], [CM45T3R].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_threshold": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio",
+        "min": 0.01,
+        "max": 0.3,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "long_legged_doji_trigger": {
+    "rule_name": "long_legged_doji_trigger",
+    "description": "Check if a long-legged doji is detected on the current bar. A doji with both upper and lower wicks at least wick_threshold of the total range, indicating extreme indecision. References: [NISON], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_threshold": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio",
+        "min": 0.01,
+        "max": 0.3,
+        "optional": true,
+        "default": 0.1
+      },
+      "wick_threshold": {
+        "type": "float",
+        "description": "Minimum wick-to-range ratio for both wicks",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.25
+      }
+    }
+  },
+  "dragonfly_doji_trigger": {
+    "rule_name": "dragonfly_doji_trigger",
+    "description": "Check if a dragonfly doji is detected on the current bar. A doji with open/close near the high and a long lower shadow. Bullish signal at support. References: [NISON], [STOCKCHARTS], [TRENDSPIDER].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_threshold": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio",
+        "min": 0.01,
+        "max": 0.3,
+        "optional": true,
+        "default": 0.1
+      },
+      "upper_wick_max": {
+        "type": "float",
+        "description": "Maximum upper wick-to-range ratio",
+        "min": 0.01,
+        "max": 0.2,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "gravestone_doji_trigger": {
+    "rule_name": "gravestone_doji_trigger",
+    "description": "Check if a gravestone doji is detected on the current bar. A doji with open/close near the low and a long upper shadow. Bearish signal at resistance. References: [NISON], [STOCKCHARTS], [TRENDSPIDER].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_threshold": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio",
+        "min": 0.01,
+        "max": 0.3,
+        "optional": true,
+        "default": 0.1
+      },
+      "lower_wick_max": {
+        "type": "float",
+        "description": "Maximum lower wick-to-range ratio",
+        "min": 0.01,
+        "max": 0.2,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "hammer_trigger": {
+    "rule_name": "hammer_trigger",
+    "description": "Check if a hammer shape is detected on the current bar. Small body at upper end with long lower wick and minimal upper wick. Bullish reversal after downtrend. References: [NISON], [KB-07], [CM45T3R].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_ratio": {
+        "type": "float",
+        "description": "Minimum lower wick to body ratio",
+        "min": 1.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "upper_wick_max": {
+        "type": "float",
+        "description": "Maximum upper wick to body ratio",
+        "min": 0.01,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "shooting_star_trigger": {
+    "rule_name": "shooting_star_trigger",
+    "description": "Check if a shooting star shape is detected on the current bar. Small body at lower end with long upper wick and minimal lower wick. Bearish reversal after uptrend. References: [NISON], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_ratio": {
+        "type": "float",
+        "description": "Minimum upper wick to body ratio",
+        "min": 1.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "lower_wick_max": {
+        "type": "float",
+        "description": "Maximum lower wick to body ratio",
+        "min": 0.01,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "hanging_man_trigger": {
+    "rule_name": "hanging_man_trigger",
+    "description": "Check if a hanging man shape is detected on the current bar. Same shape as hammer (small body, long lower wick) but interpreted as a bearish reversal when appearing after an uptrend. References: [NISON], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_ratio": {
+        "type": "float",
+        "description": "Minimum lower wick to body ratio",
+        "min": 1.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "upper_wick_max": {
+        "type": "float",
+        "description": "Maximum upper wick to body ratio",
+        "min": 0.01,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "inverted_hammer_trigger": {
+    "rule_name": "inverted_hammer_trigger",
+    "description": "Check if an inverted hammer shape is detected on the current bar. Same shape as shooting star (small body, long upper wick) but interpreted as a bullish reversal when appearing after a downtrend. References: [NISON], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_ratio": {
+        "type": "float",
+        "description": "Minimum upper wick to body ratio",
+        "min": 1.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "lower_wick_max": {
+        "type": "float",
+        "description": "Maximum lower wick to body ratio",
+        "min": 0.01,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.1
+      }
+    }
+  },
+  "marubozu_bullish_trigger": {
+    "rule_name": "marubozu_bullish_trigger",
+    "description": "Check if a bullish marubozu is detected on the current bar. Full-bodied bullish candle with minimal or no wicks. Signals strong buying conviction. References: [NISON], [KB-07], [CM45T3R].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_tolerance": {
+        "type": "float",
+        "description": "Maximum wick-to-range ratio",
+        "min": 0.0,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.05
+      }
+    }
+  },
+  "marubozu_bearish_trigger": {
+    "rule_name": "marubozu_bearish_trigger",
+    "description": "Check if a bearish marubozu is detected on the current bar. Full-bodied bearish candle with minimal or no wicks. Signals strong selling conviction. References: [NISON], [KB-07], [CM45T3R].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_tolerance": {
+        "type": "float",
+        "description": "Maximum wick-to-range ratio",
+        "min": 0.0,
+        "max": 0.1,
+        "optional": true,
+        "default": 0.05
+      }
+    }
+  },
+  "spinning_top_trigger": {
+    "rule_name": "spinning_top_trigger",
+    "description": "Check if a spinning top is detected on the current bar. Small body with significant wicks on both sides, signaling indecision. References: [NISON], [CM45T3R], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_max": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.3
+      },
+      "wick_min": {
+        "type": "float",
+        "description": "Minimum wick-to-range ratio for both wicks",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.2
+      }
+    }
+  },
+  "bullish_engulfing_trigger": {
+    "rule_name": "bullish_engulfing_trigger",
+    "description": "Check if a bullish engulfing pattern completed on the current bar. Current bullish candle's body completely contains the previous bearish candle's body. Strong bullish reversal. References: [NISON], [KB-07], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "Close"
+    ],
+    "params": {}
+  },
+  "bearish_engulfing_trigger": {
+    "rule_name": "bearish_engulfing_trigger",
+    "description": "Check if a bearish engulfing pattern completed on the current bar. Current bearish candle's body completely contains the previous bullish candle's body. Strong bearish reversal. References: [NISON], [KB-07], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "Close"
+    ],
+    "params": {}
+  },
+  "bullish_harami_trigger": {
+    "rule_name": "bullish_harami_trigger",
+    "description": "Check if a bullish harami pattern completed on the current bar. Current small bullish candle's body is inside the previous large bearish candle's body. Potential bullish reversal. References: [NISON], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "Close"
+    ],
+    "params": {}
+  },
+  "bearish_harami_trigger": {
+    "rule_name": "bearish_harami_trigger",
+    "description": "Check if a bearish harami pattern completed on the current bar. Current small bearish candle's body is inside the previous large bullish candle's body. Potential bearish reversal. References: [NISON], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "Close"
+    ],
+    "params": {}
+  },
+  "piercing_line_trigger": {
+    "rule_name": "piercing_line_trigger",
+    "description": "Check if a piercing line pattern completed on the current bar. Bullish reversal: bearish candle followed by bullish candle opening below prior low and closing above midpoint of prior body. References: [NISON], [KB-07].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "min_penetration": {
+        "type": "float",
+        "description": "Minimum penetration into previous body",
+        "min": 0.3,
+        "max": 0.8,
+        "optional": true,
+        "default": 0.5
+      }
+    }
+  },
+  "dark_cloud_cover_trigger": {
+    "rule_name": "dark_cloud_cover_trigger",
+    "description": "Check if a dark cloud cover pattern completed on the current bar. Bearish reversal: bullish candle followed by bearish candle opening above prior high and closing below midpoint of prior body. References: [NISON], [KB-07].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "min_penetration": {
+        "type": "float",
+        "description": "Minimum penetration into previous body",
+        "min": 0.3,
+        "max": 0.8,
+        "optional": true,
+        "default": 0.5
+      }
+    }
+  },
+  "tweezer_tops_trigger": {
+    "rule_name": "tweezer_tops_trigger",
+    "description": "Check if a tweezer tops pattern completed on the current bar. Two consecutive candles with approximately equal highs, first bullish and second bearish. Bearish reversal. References: [NISON], [CM45T3R].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "tolerance": {
+        "type": "float",
+        "description": "Maximum high-to-high difference as fraction of average range",
+        "min": 0.001,
+        "max": 0.05,
+        "optional": true,
+        "default": 0.01
+      }
+    }
+  },
+  "tweezer_bottoms_trigger": {
+    "rule_name": "tweezer_bottoms_trigger",
+    "description": "Check if a tweezer bottoms pattern completed on the current bar. Two consecutive candles with approximately equal lows, first bearish and second bullish. Bullish reversal. References: [NISON], [CM45T3R].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "tolerance": {
+        "type": "float",
+        "description": "Maximum low-to-low difference as fraction of average range",
+        "min": 0.001,
+        "max": 0.05,
+        "optional": true,
+        "default": 0.01
+      }
+    }
+  },
+  "morning_star_trigger": {
+    "rule_name": "morning_star_trigger",
+    "description": "Check if a morning star pattern completed on the current bar. Three-candle bullish reversal: bearish candle, small-bodied star, then bullish candle closing above midpoint of first. References: [NISON], [KB-07].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_threshold": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio for middle candle",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.3
+      }
+    }
+  },
+  "evening_star_trigger": {
+    "rule_name": "evening_star_trigger",
+    "description": "Check if an evening star pattern completed on the current bar. Three-candle bearish reversal: bullish candle, small-bodied star, then bearish candle closing below midpoint of first. References: [NISON], [KB-07].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "body_threshold": {
+        "type": "float",
+        "description": "Maximum body-to-range ratio for middle candle",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.3
+      }
+    }
+  },
+  "three_white_soldiers_trigger": {
+    "rule_name": "three_white_soldiers_trigger",
+    "description": "Check if three white soldiers pattern completed on the current bar. Three consecutive bullish candles with higher closes, each opening within the previous body. Strong bullish signal. References: [NISON], [KB-07], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "min_body_ratio": {
+        "type": "float",
+        "description": "Minimum body-to-range ratio per candle",
+        "min": 0.3,
+        "max": 0.8,
+        "optional": true,
+        "default": 0.5
+      }
+    }
+  },
+  "three_black_crows_trigger": {
+    "rule_name": "three_black_crows_trigger",
+    "description": "Check if three black crows pattern completed on the current bar. Three consecutive bearish candles with lower closes, each opening within the previous body. Strong bearish signal. References: [NISON], [KB-07], [STOCKCHARTS].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "min_body_ratio": {
+        "type": "float",
+        "description": "Minimum body-to-range ratio per candle",
+        "min": 0.3,
+        "max": 0.8,
+        "optional": true,
+        "default": 0.5
+      }
+    }
+  },
+  "three_inside_up_trigger": {
+    "rule_name": "three_inside_up_trigger",
+    "description": "Check if three inside up pattern completed on the current bar. Bearish candle, bullish harami, then bullish close above first candle's open. Confirmed bullish reversal. References: [NISON], [KB-07], [TRENDSPIDER].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "Close"
+    ],
+    "params": {}
+  },
+  "three_inside_down_trigger": {
+    "rule_name": "three_inside_down_trigger",
+    "description": "Check if three inside down pattern completed on the current bar. Bullish candle, bearish harami, then bearish close below first candle's open. Confirmed bearish reversal. References: [NISON], [KB-07], [TRENDSPIDER].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "Close"
+    ],
+    "params": {}
+  },
+  "inside_bar_trigger": {
+    "rule_name": "inside_bar_trigger",
+    "description": "Check if an inside bar is detected on the current bar. Current bar's range is completely contained within the previous bar's range. Signals consolidation and potential breakout. References: [KB-07], [TSR].",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {}
+  },
+  "outside_bar_trigger": {
+    "rule_name": "outside_bar_trigger",
+    "description": "Check if an outside bar is detected on the current bar. Current bar's range completely engulfs the previous bar's range. Signals increased volatility. References: [KB-07], [TSR].",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {}
+  },
+  "bullish_pin_bar_trigger": {
+    "rule_name": "bullish_pin_bar_trigger",
+    "description": "Check if a bullish pin bar is detected on the current bar. Long lower wick with body in the upper portion of the range. Bullish reversal at support. References: [KB-07], [TSR], [PRICEACTION].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_ratio": {
+        "type": "float",
+        "description": "Minimum dominant wick to body ratio",
+        "min": 1.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "body_position": {
+        "type": "float",
+        "description": "Maximum body distance from end as fraction of range",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.33
+      }
+    }
+  },
+  "bearish_pin_bar_trigger": {
+    "rule_name": "bearish_pin_bar_trigger",
+    "description": "Check if a bearish pin bar is detected on the current bar. Long upper wick with body in the lower portion of the range. Bearish reversal at resistance. References: [KB-07], [TSR], [PRICEACTION].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "wick_ratio": {
+        "type": "float",
+        "description": "Minimum dominant wick to body ratio",
+        "min": 1.5,
+        "max": 5.0,
+        "optional": true,
+        "default": 2.0
+      },
+      "body_position": {
+        "type": "float",
+        "description": "Maximum body distance from end as fraction of range",
+        "min": 0.1,
+        "max": 0.5,
+        "optional": true,
+        "default": 0.33
+      }
+    }
+  },
+  "two_bar_reversal_bullish_trigger": {
+    "rule_name": "two_bar_reversal_bullish_trigger",
+    "description": "Check if a bullish two-bar reversal completed on the current bar. Bearish bar followed by bullish bar that takes out the low then closes above the prior open. References: [KB-07], [TSR], [DAILYFOREX].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {}
+  },
+  "two_bar_reversal_bearish_trigger": {
+    "rule_name": "two_bar_reversal_bearish_trigger",
+    "description": "Check if a bearish two-bar reversal completed on the current bar. Bullish bar followed by bearish bar that takes out the high then closes below the prior open. References: [KB-07], [TSR], [DAILYFOREX].",
+    "type": "TRIGGER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {}
+  },
+  "nr7_trigger": {
+    "rule_name": "nr7_trigger",
+    "description": "Check if a narrow range day is detected on the current bar. Current bar has the smallest range within the lookback period. Signals volatility compression and imminent breakout. Default lookback=7 for NR7; use 4 for NR4. References: [CRABEL], [KB-07], [BULKOWSKI].",
+    "type": "TRIGGER",
+    "requires": [
+      "High",
+      "Low"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of bars to compare range against",
+        "min": 4,
+        "max": 20,
+        "optional": true,
+        "default": 7
+      }
+    }
+  },
+  "bullish_pattern_recent": {
+    "rule_name": "bullish_pattern_recent",
+    "description": "Check if any bullish candlestick pattern was detected within lookback bars. Scans for hammer, inverted hammer, bullish engulfing, bullish harami, piercing line, morning star, dragonfly doji, three white soldiers, three inside up, tweezer bottoms, and bullish pin bar within the recent window.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "bearish_pattern_recent": {
+    "rule_name": "bearish_pattern_recent",
+    "description": "Check if any bearish candlestick pattern was detected within lookback bars. Scans for hanging man, shooting star, bearish engulfing, bearish harami, dark cloud cover, evening star, gravestone doji, three black crows, three inside down, tweezer tops, and bearish pin bar within the recent window.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "reversal_pattern_bullish": {
+    "rule_name": "reversal_pattern_bullish",
+    "description": "Check if a bullish reversal pattern was detected within lookback bars. Scans for hammer, inverted hammer, bullish engulfing, morning star, piercing line, and dragonfly doji -- the classic bullish reversal patterns.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "reversal_pattern_bearish": {
+    "rule_name": "reversal_pattern_bearish",
+    "description": "Check if a bearish reversal pattern was detected within lookback bars. Scans for hanging man, shooting star, bearish engulfing, evening star, dark cloud cover, and gravestone doji -- the classic bearish reversal patterns.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "continuation_pattern_bullish": {
+    "rule_name": "continuation_pattern_bullish",
+    "description": "Check if a bullish continuation pattern was detected within lookback bars. Scans for three white soldiers and three inside up.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "continuation_pattern_bearish": {
+    "rule_name": "continuation_pattern_bearish",
+    "description": "Check if a bearish continuation pattern was detected within lookback bars. Scans for three black crows and three inside down.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "indecision_pattern_recent": {
+    "rule_name": "indecision_pattern_recent",
+    "description": "Check if an indecision pattern was detected within lookback bars. Scans for doji, spinning top, inside bar, and NR7.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  },
+  "strong_body_recent": {
+    "rule_name": "strong_body_recent",
+    "description": "Check if a marubozu (strong body) was detected within lookback bars. Scans for both bullish and bearish marubozu patterns.",
+    "type": "FILTER",
+    "requires": [
+      "Open",
+      "High",
+      "Low",
+      "Close"
+    ],
+    "params": {
+      "lookback": {
+        "type": "int",
+        "description": "Number of recent bars to check",
+        "min": 1,
+        "max": 20,
+        "optional": true,
+        "default": 5
+      }
+    }
+  }
+}

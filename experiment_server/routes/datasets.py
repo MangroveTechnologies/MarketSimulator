@@ -15,5 +15,5 @@ router = APIRouter(prefix="/datasets", tags=["datasets"])
 @router.get("")
 async def list_datasets() -> list[dict[str, Any]]:
     """List available OHLCV data files."""
-    datasets = discover_datasets(settings.mangrove_data_dir)
+    datasets = discover_datasets(settings.ohlcv_dir)
     return [d.model_dump() for d in datasets]

@@ -19,7 +19,12 @@ def create_app() -> FastAPI:
     )
 
     from experiment_server.routes.experiments import router as experiments_router
+    from experiment_server.routes.datasets import router as datasets_router
+    from experiment_server.routes.signals import router as signals_router
+
     app.include_router(experiments_router, prefix="/api/v1")
+    app.include_router(datasets_router, prefix="/api/v1")
+    app.include_router(signals_router, prefix="/api/v1")
 
     return app
 

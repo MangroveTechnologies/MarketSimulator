@@ -1,0 +1,272 @@
+"""Sweep worker -- RQ job function for backtest execution.
+
+Each worker receives an assignment (experiment_id, dataset_key, worker_id,
+list of run specs) and processes them sequentially:
+1. Load OHLCV data once for the assigned dataset
+2. Query completed run_indices from existing Parquet files (for resume)
+3. For each run: set RNG seed, build strategy config, run backtest, buffer row
+4. Flush Parquet chunks at chunk_size intervals
+5. Publish progress to Redis Streams after each run
+
+Workers are fully independent -- no shared state, no IPC.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import random
+import sys
+import time
+from datetime import datetime, timezone
+from typing import Any
+
+import redis as redis_lib
+
+from experiment_server.config import settings
+from experiment_server.services.dataset import compute_file_hash
+from experiment_server.services.plan_generator import RunSpec
+from experiment_server.services.query import count_completed
+from experiment_server.services.reconstruct import flatten_strategy_config
+from experiment_server.workers.parquet_writer import ParquetChunkWriter
+
+logger = logging.getLogger(__name__)
+
+
+def _suppress_engine_output():
+    """Suppress noisy backtest engine loggers and stdout prints."""
+    for name in [
+        "MangroveAI.domains.backtesting",
+        "MangroveAI.domains.strategies",
+        "MangroveAI.domains.managers",
+        "MangroveAI.domains.positions",
+    ]:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
+
+def _build_strategy_config(run: RunSpec) -> dict[str, Any]:
+    """Build the complete strategy config from a RunSpec."""
+    entry = json.loads(run.entry_json)
+    exit_sigs = json.loads(run.exit_json)
+
+    return {
+        "name": f"exp_{run.dataset_key}_{run.trigger_name}_{run.run_index}",
+        "asset": run.asset,
+        "entry": entry,
+        "exit": exit_sigs,
+        "reward_factor": run.exec_config.get("reward_factor", 2.0),
+        "execution_config": run.exec_config,
+    }
+
+
+def _extract_metrics(result: dict[str, Any]) -> dict[str, Any]:
+    """Extract metric columns from a backtest result dict."""
+    m = result.get("metrics", {})
+    total_trades = int(m.get("total_trades") or 0)
+
+    return {
+        "total_trades": total_trades,
+        "win_rate": round(float(m.get("win_rate") or 0), 4),
+        "total_return": round(float(m.get("annual_return") or 0), 4),
+        "sharpe_ratio": round(float(m.get("sharpe_ratio") or 0), 4),
+        "sortino_ratio": round(float(m.get("sortino_ratio") or 0), 4),
+        "max_drawdown": round(float(m.get("max_drawdown") or 0), 4),
+        "max_drawdown_duration": int(m.get("max_drawdown_duration") or 0),
+        "calmar_ratio": round(float(m.get("calmar_ratio") or 0), 4),
+        "gain_to_pain_ratio": round(float(m.get("gain_to_pain_ratio") or 0), 4),
+        "irr_annualized": round(float(m.get("irr_annualized") or 0), 4),
+        "irr_daily": round(float(m.get("irr_daily") or 0), 6),
+        "avg_daily_return": round(float(m.get("avg_daily_return") or 0), 6),
+        "max_consecutive_wins": int(m.get("max_consecutive_wins") or 0),
+        "max_consecutive_losses": int(m.get("max_consecutive_losses") or 0),
+        "num_days": int(m.get("num_days") or 0),
+        "net_pnl": round(float(
+            (m.get("ending_balance") or 10000) - (m.get("starting_balance") or 10000)
+        ), 2),
+        "starting_balance_result": float(m.get("starting_balance") or 10000),
+        "ending_balance": float(m.get("ending_balance") or 10000),
+        "status": "no_trades" if total_trades == 0 else "ok",
+    }
+
+
+def execute_sweep_job(
+    experiment_id: str,
+    experiment_dir: str,
+    dataset_key: str,
+    worker_id: int,
+    runs: list[dict[str, Any]],
+    experiment_config: dict[str, Any],
+    experiment_seed: int = 42,
+    code_version: str = "",
+    chunk_size: int = 1024,
+    redis_url: str | None = None,
+    backtest_fn: Any = None,
+) -> dict[str, Any]:
+    """Execute a batch of backtest runs for one worker.
+
+    This is the function that RQ calls. It can also be called directly
+    for testing (with a mock backtest_fn).
+
+    Args:
+        experiment_id: Experiment identifier.
+        experiment_dir: Path to the experiment directory.
+        dataset_key: e.g., "BTC_1d".
+        worker_id: Globally unique worker ID.
+        runs: List of RunSpec dicts (serialized for RQ).
+        experiment_config: Full experiment config dict (for Parquet metadata).
+        experiment_seed: Seed for RNG seeding per run.
+        code_version: Git SHA for provenance.
+        chunk_size: Rows per Parquet chunk.
+        redis_url: Redis connection URL (None to skip progress publishing).
+        backtest_fn: Callable for running backtests. If None, imports from
+            MangroveAI (requires /app/MangroveAI on sys.path).
+
+    Returns:
+        Summary dict with completed, errors, skipped counts.
+    """
+    # Deserialize RunSpec objects
+    run_specs = [RunSpec(**r) if isinstance(r, dict) else r for r in runs]
+
+    # Set up output directory
+    output_dir = os.path.join(experiment_dir, "results", dataset_key)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Check completed runs for resume
+    completed_indices = count_completed(experiment_dir)
+    skipped = 0
+
+    # Set up Parquet writer
+    writer = ParquetChunkWriter(
+        output_dir=output_dir,
+        worker_id=worker_id,
+        chunk_size=chunk_size,
+        experiment_config=experiment_config,
+    )
+
+    # Set up Redis for progress publishing
+    r = None
+    stream_key = f"exp:{experiment_id}:progress"
+    if redis_url:
+        try:
+            r = redis_lib.from_url(redis_url)
+        except Exception as exc:
+            logger.warning("Could not connect to Redis: %s", exc)
+
+    # Load backtest function
+    if backtest_fn is None:
+        _suppress_engine_output()
+        sys.path.insert(0, "/app")
+        from MangroveAI.domains.backtesting.services import run_backtest
+        from MangroveAI.domains.backtesting.domain_models.requests import BacktestRequest
+        # Will be set up per-run below
+        _use_mangrove = True
+    else:
+        _use_mangrove = False
+
+    completed = 0
+    errors = 0
+    t_start = time.time()
+
+    for run in run_specs:
+        if run.run_index in completed_indices:
+            skipped += 1
+            continue
+
+        # Deterministic RNG seed per run
+        run_seed = experiment_seed * 1000000 + run.run_index
+        random.seed(run_seed)
+
+        strategy_config = _build_strategy_config(run)
+        t0 = time.time()
+
+        try:
+            if _use_mangrove:
+                # TODO: Wire up MangroveAI's run_single_backtest properly
+                # This requires loading OHLCV data and injecting into cache
+                result = {"success": False, "error": "MangroveAI integration pending"}
+            else:
+                result = backtest_fn(strategy_config, run)
+
+            if not result.get("success"):
+                raise RuntimeError(result.get("error", "unknown error"))
+
+            metrics = _extract_metrics(result)
+            completed += 1
+
+        except Exception as e:
+            metrics = {
+                "total_trades": 0, "win_rate": 0, "total_return": 0,
+                "sharpe_ratio": 0, "sortino_ratio": 0, "max_drawdown": 0,
+                "max_drawdown_duration": 0, "calmar_ratio": 0,
+                "gain_to_pain_ratio": 0, "irr_annualized": 0, "irr_daily": 0,
+                "avg_daily_return": 0, "max_consecutive_wins": 0,
+                "max_consecutive_losses": 0, "num_days": 0, "net_pnl": 0,
+                "starting_balance_result": 10000, "ending_balance": 10000,
+                "status": "error",
+            }
+            metrics["error_msg"] = str(e)[:200]
+            errors += 1
+
+        elapsed = round(time.time() - t0, 2)
+
+        # Build the full result row
+        row = flatten_strategy_config(
+            strategy_config,
+            run_index=run.run_index,
+            experiment_id=experiment_id,
+            code_version=code_version,
+            rng_seed=run_seed,
+            data_file_path=run.data_file,
+            data_file_hash="",  # computed at launch time
+            data_file_rows=0,
+            timeframe=run.timeframe,
+            start_date=run.start_date,
+            end_date=run.end_date,
+            elapsed_seconds=elapsed,
+            completed_at=datetime.now(timezone.utc).isoformat(),
+            **metrics,
+        )
+
+        writer.add_row(row)
+
+        # Publish progress
+        if r:
+            try:
+                r.xadd(stream_key, {
+                    "worker_id": str(worker_id),
+                    "dataset": dataset_key,
+                    "completed": str(completed),
+                    "errors": str(errors),
+                    "skipped": str(skipped),
+                    "run_index": str(run.run_index),
+                })
+            except Exception:
+                pass  # Non-critical
+
+    writer.close()
+    total_elapsed = round(time.time() - t_start, 2)
+
+    # Publish completion
+    if r:
+        try:
+            r.xadd(stream_key, {
+                "worker_id": str(worker_id),
+                "dataset": dataset_key,
+                "status": "done",
+                "completed": str(completed),
+                "errors": str(errors),
+                "skipped": str(skipped),
+                "elapsed": str(total_elapsed),
+            })
+        except Exception:
+            pass
+
+    return {
+        "worker_id": worker_id,
+        "dataset": dataset_key,
+        "completed": completed,
+        "errors": errors,
+        "skipped": skipped,
+        "elapsed_seconds": total_elapsed,
+    }

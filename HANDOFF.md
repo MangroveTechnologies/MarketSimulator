@@ -6,70 +6,88 @@ Last updated: 2026-03-02
 
 ### What's Working
 
-- **FastAPI backend** (port 5100) with full REST API -- 22 endpoints, 87 tests passing
+- **FastAPI backend** (port 5100) with full REST API -- 22 endpoints, 87+ tests
 - **DuckDB + Parquet** storage for experiment results
 - **Parallel worker execution** via multiprocessing with real MangroveAI backtest engine
-- **Dashboard** at http://localhost:5100/ (React SPA) and http://localhost:5100/old (HTML fallback)
+- **Dashboard** at http://localhost:5100/ (React SPA, basic) and http://localhost:5100/old (HTML fallback)
 - **7 OHLCV datasets** (BTC/1d, ETH/4h, DOGE/5m, LINK/30m, PAXG/1h, SOL/5m, XRP/15m)
 - **96 signals** (34 triggers, 62 filters) from MangroveKnowledgeBase
 - **Docker container** `mangrove-sweep` with `--restart unless-stopped`
-- **2 completed experiments** (70 total runs, 21 with trades)
+- **config_hash** column in Parquet schema (SHA256 of full strategy config for dedup)
+- **Dual search mode** -- random (sample N) and grid (enumerate all)
+- **3 experiments** completed (70 runs) + 1 running ("seed", 300K runs)
 
-### What Needs Finishing (React UI)
+### Known Backend Limitations
 
-The React frontend at `experiment_ui/` is scaffolded but needs significant work.
-Current state is a first pass that has major issues the user identified:
+1. **config_hash stored but not checked** -- The hash is computed and written to Parquet
+   per result row, but the worker does NOT check for duplicates before running. The dedup
+   query (`SELECT 1 WHERE config_hash = ?`) needs to be added to the worker loop. This
+   means duplicate configs CAN be run across experiments currently.
 
-1. **Configure View** -- Currently a placeholder linking to old HTML. Needs full form with
-   collapsible sections (datasets, search mode, signal counts, exec config sweeps, stats bar)
+2. **Exit signal validation** -- MangroveAI's Strategy class requires exit rules to have
+   exactly 1 TRIGGER if any exit signals are specified. The random plan generator can
+   create exit configs with only FILTER signals (no trigger), causing ValueError. Fix:
+   add constraint in `_generate_random_plan` to ensure exit always has a trigger when
+   exit signals are present.
 
-2. **Explore View** -- Has results table and detail panel but:
-   - Row detail should **expand inline** (accordion style), not show below the table
-   - Execution config display needs **grouped sections** (risk, volatility, timing, etc.), not one long table
-   - Missing **interactive chart** with OHLCV candles + trade entry/exit markers (use lightweight-charts)
-   - Missing **trades table** tab showing individual trade records
-   - Color scheme doesn't match brand properly -- Tailwind v4 CSS variable approach needs fixing
-   - Light theme toggle is broken
-   - Needs start/end dates, num_bars, data_file_hash, code_version shown prominently
+3. **Multi-filter entry limitation** -- MangroveAI's backtest engine only uses the first
+   filter in entry when multiple are provided ("Entry has 2 filters, using only the first
+   one"). The plan generator can create multi-filter entries, but only the first filter
+   is actually evaluated. This is an engine limitation.
 
-3. **Monitor View** -- Basic experiment list exists but:
-   - No real-time progress (SSE not wired)
-   - No per-dataset progress bars
-   - No rate/ETA display
-   - No pause/resume controls
+4. **win_rate stored as 0-100** -- The engine returns win_rate as a percentage (e.g., 60.0
+   for 60%). Display code must NOT multiply by 100 again. The explore view computes this
+   correctly now.
 
-4. **Styling** -- The custom Tailwind colors (`mg-*`) aren't rendering correctly in Tailwind v4.
-   Need to verify the `@theme` approach works or switch to standard CSS variables.
+5. **total_return field** -- Fixed in worker to read `m.get("total_return")`. Old experiment
+   data has 0.0 for this field. The explore view computes return on-the-fly from
+   ending_balance and net_pnl to work around this.
+
+6. **Provenance for old experiments** -- Experiments created before 2026-03-02 have empty
+   data_file_hash and code_version. New experiments populate these correctly.
+
+7. **Experiment status detection** -- Workers don't update experiment status to "completed"
+   when done. Status was manually fixed for first experiments. Need auto-completion
+   detection (check if completed count == total_runs).
+
+### React Frontend Status
+
+The React app at `experiment_ui/` is scaffolded with Vite + TypeScript + Tailwind but
+needs significant work:
+
+**Issues identified by user:**
+- Color scheme is bad -- Tailwind v4 custom theme variables aren't rendering correctly
+- Light theme toggle is broken
+- Configure view is a placeholder (links to old HTML)
+- Detail panel should expand inline (accordion), not below table
+- Execution config display needs grouped sections, not one long table
+- Missing interactive OHLCV chart with trade markers (lightweight-charts)
+- Missing trades table tab
+- Missing start/end dates, num_bars, file_hash, code_version in results display
+
+**What needs to happen:**
+1. Fix Tailwind v4 theme -- either fix `@theme` approach or use standard CSS variables
+2. Rebuild Explore view with inline-expanding rows, grouped config, chart + trades tabs
+3. Build Configure view (port from HTML dashboard with improvements)
+4. Build Monitor view with real SSE progress streaming
+5. Apply Mangrove brand properly (see `docs/plans/2026-03-01-experiment-framework-ui-ux.md`)
 
 ### Design Documents
 
 All in `docs/plans/`:
-- `2026-02-28-experiment-framework-requirements.md` -- Approved
-- `2026-02-28-experiment-framework-specification.md` -- Approved
-- `2026-02-28-experiment-framework-architecture.md` -- Approved
-- `2026-02-28-experiment-framework-implementation.md` -- Implementation plan (29 tasks)
-- `2026-03-01-experiment-framework-ui-ux.md` -- UI/UX design with Mangrove brand spec
-- `docs/data-model-exploration.md` -- Parquet schema mapping
+- `2026-02-28-experiment-framework-requirements.md`
+- `2026-02-28-experiment-framework-specification.md`
+- `2026-02-28-experiment-framework-architecture.md`
+- `2026-02-28-experiment-framework-implementation.md`
+- `2026-03-01-experiment-framework-ui-ux.md`
 
 ### Brand Assets
 
-In `branding/`:
-- 5 SVG logo variants
-- `brand-guidelines.md` -- Color palette, typography, logo rules
-
-### Known Data Issues
-
-- **Existing experiment results** have `total_return=0` (bug fixed in worker, needs re-run for correct data)
-- **Existing results** have empty `data_file_hash` and `code_version` (fixed for new experiments)
-- **win_rate** is stored as 0-100 (percentage), not 0-1 -- display code must NOT multiply by 100
+In `branding/`: 5 SVG logos + `brand-guidelines.md`
 
 ### Container Setup
 
 ```bash
-# Container is already running with --restart unless-stopped
-docker ps | grep mangrove-sweep
-
-# If not running:
 docker run -d --name mangrove-sweep \
     --restart unless-stopped \
     --network mangrove-network \
@@ -99,4 +117,4 @@ npm run build        # Builds to ../experiment_ui_dist/ (served by FastAPI)
 
 ### API Docs
 
-http://localhost:5100/docs (auto-generated FastAPI OpenAPI)
+http://localhost:5100/docs

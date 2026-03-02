@@ -206,12 +206,15 @@ def launch_experiment(
     if config.status not in ("validated", "paused"):
         raise ValueError(f"Experiment must be validated before launch (status: {config.status})")
 
-    # Compute data file hashes
+    # Compute data file hashes and row counts
     for ds in config.datasets:
-        if not ds.hash:
-            file_path = os.path.join(settings.ohlcv_dir, ds.file)
-            if os.path.exists(file_path):
+        file_path = os.path.join(settings.ohlcv_dir, ds.file)
+        if os.path.exists(file_path):
+            if not ds.hash:
                 ds.hash = compute_file_hash(file_path)
+            if not ds.rows:
+                with open(file_path) as f:
+                    ds.rows = max(0, sum(1 for _ in f) - 1)
 
     # Generate the deterministic plan
     plan = generate_plan(config)

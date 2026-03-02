@@ -34,6 +34,14 @@ from experiment_server.workers.parquet_writer import ParquetChunkWriter
 logger = logging.getLogger(__name__)
 
 
+def _get_dataset_field(experiment_config: dict, data_file: str, field: str) -> Any:
+    """Look up a dataset field from the experiment config."""
+    for ds in experiment_config.get("datasets", []):
+        if ds.get("file") == data_file:
+            return ds.get(field, "" if field == "hash" else 0)
+    return "" if field == "hash" else 0
+
+
 def _suppress_engine_output():
     """Suppress noisy backtest engine loggers and stdout prints."""
     for name in [
@@ -291,8 +299,8 @@ def execute_sweep_job(
             code_version=code_version,
             rng_seed=run_seed,
             data_file_path=run.data_file,
-            data_file_hash="",  # computed at launch time
-            data_file_rows=0,
+            data_file_hash=_get_dataset_field(experiment_config, run.data_file, "hash"),
+            data_file_rows=_get_dataset_field(experiment_config, run.data_file, "rows"),
             timeframe=run.timeframe,
             start_date=run.start_date,
             end_date=run.end_date,

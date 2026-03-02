@@ -150,14 +150,14 @@ def validate_experiment(experiment_id: str) -> dict[str, Any]:
     if not config.datasets:
         errs.append("No datasets selected")
 
-    if not config.entry_signals.triggers:
-        errs.append("No entry trigger signals selected")
-
-    if not config.entry_signals.filters:
-        errs.append("No entry filter signals selected")
-
-    if config.search_mode == "random" and not config.n_random:
-        errs.append("Random search mode requires n_random > 0")
+    if config.search_mode == "grid":
+        if not config.entry_signals.triggers:
+            errs.append("No entry trigger signals selected")
+        if not config.entry_signals.filters:
+            errs.append("No entry filter signals selected")
+    elif config.search_mode == "random":
+        if not config.n_random:
+            errs.append("Random search mode requires n_random > 0")
 
     # Compute total runs
     total = 0
@@ -247,17 +247,30 @@ def launch_experiment(
                 })
                 worker_id += 1
 
-    # Enqueue jobs
+    # Enqueue/launch jobs
     if enqueue_fn:
         for job in jobs:
             enqueue_fn(job)
-    elif redis_url:
-        from rq import Queue
-        r = redis_lib.from_url(redis_url)
-        q = Queue("experiments", connection=r)
+    else:
+        # Launch workers directly via multiprocessing (no Redis required)
+        import multiprocessing
         from experiment_server.workers.sweep_worker import execute_sweep_job
+
+        def _run_worker(job_kwargs):
+            try:
+                execute_sweep_job(**job_kwargs)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+
         for job in jobs:
-            q.enqueue(execute_sweep_job, **job, job_timeout=-1)
+            p = multiprocessing.Process(
+                target=_run_worker,
+                args=(job,),
+                name=f"worker-{job['worker_id']}-{job['dataset_key']}",
+                daemon=True,
+            )
+            p.start()
 
     # Update status
     config.status = "running"

@@ -157,16 +157,19 @@ var COLUMNS=[
   {key:'asset',label:'Asset'},
   {key:'timeframe',label:'TF'},
   {key:'trigger_name',label:'Trigger'},
-  {key:'num_entry_signals',label:'Sigs'},
+  {key:'num_entry_signals',label:'Entry'},
+  {key:'num_exit_signals',label:'Exit'},
   {key:'reward_factor',label:'RF',fmt:function(v){return fmt(v,1);}},
+  {key:'cooldown_bars',label:'CD'},
+  {key:'max_risk_per_trade',label:'Risk',fmt:function(v){return fmt(v*100,2)+'%';}},
   {key:'total_trades',label:'Trades'},
-  {key:'win_rate',label:'Win%',fmt:function(v){return fmt(v*100,1)+'%';}},
-  {key:'total_return',label:'Return',fmt:function(v){return fmt(v,2);}},
+  {key:'win_rate',label:'Win%',fmt:function(v){return fmt(v,1)+'%';}},
+  {key:'total_return',label:'Return%',fmt:function(v){return fmt(v,2)+'%';}},
   {key:'sharpe_ratio',label:'Sharpe',fmt:function(v){return fmt(v,2);}},
   {key:'sortino_ratio',label:'Sortino',fmt:function(v){return fmt(v,2);}},
-  {key:'max_drawdown',label:'MaxDD',fmt:function(v){return fmt(v,2)+'%';}},
+  {key:'max_drawdown',label:'MaxDD%',fmt:function(v){return fmt(v,2)+'%';}},
   {key:'calmar_ratio',label:'Calmar',fmt:function(v){return fmt(v,2);}},
-  {key:'net_pnl',label:'PnL',fmt:function(v){return fmt(v,0);}},
+  {key:'net_pnl',label:'PnL ($)',fmt:function(v){return '$'+fmt(v,2);}},
   {key:'status',label:'Status'},
 ];
 
@@ -270,9 +273,9 @@ function renderDetail(){
     {label:'Max DD',val:fmt(m.max_drawdown,2)+'%'},
     {label:'Calmar',val:fmt(m.calmar_ratio,2)},
     {label:'Trades',val:m.total_trades||0},
-    {label:'Win Rate',val:fmt((m.win_rate||0)*100,1)+'%'},
-    {label:'Net PnL',val:'$'+fmt(m.net_pnl,0)},
-    {label:'End Balance',val:'$'+fmt(m.ending_balance,0)},
+    {label:'Win Rate',val:fmt(m.win_rate||0,1)+'%'},
+    {label:'Net PnL',val:'$'+fmt(m.net_pnl,2)},
+    {label:'End Balance',val:'$'+fmt(m.ending_balance,2)},
   ].map(function(item){
     return '<div class="metric-card"><div class="metric-val">'+esc(String(item.val))+'</div><div class="metric-label">'+esc(item.label)+'</div></div>';
   }).join('');
@@ -289,16 +292,27 @@ function renderDetail(){
     return '<div style="margin-bottom:4px"><span class="sig-badge '+badge+'">'+esc(s.signal_type)+'</span><strong>'+esc(s.name)+'</strong> <span class="mono" style="color:var(--text-dim)">'+esc(params)+'</span></div>';
   }).join('');
 
-  // Key exec config values
+  // Exec config values -- show all meaningful ones
   var ec=sc.execution_config||{};
-  var ecHTML=[
-    'reward_factor='+fmt(ec.reward_factor,1),
-    'max_risk='+fmt(ec.max_risk_per_trade,3),
-    'cooldown='+ec.cooldown_bars,
-    'atr_period='+ec.atr_period,
-    'atr_factor='+fmt(ec.atr_volatility_factor,1),
-    'max_hold='+ec.max_hold_bars,
-  ].join(' | ');
+  var ecPairs=[
+    ['reward_factor',fmt(ec.reward_factor,1)],
+    ['max_risk',fmt((ec.max_risk_per_trade||0)*100,2)+'%'],
+    ['cooldown',ec.cooldown_bars],
+    ['atr_period',ec.atr_period],
+    ['atr_factor',fmt(ec.atr_volatility_factor,1)],
+    ['max_positions',ec.max_open_positions],
+    ['max_trades/day',ec.max_trades_per_day],
+    ['max_hold',ec.max_hold_bars],
+    ['vol_window',ec.volatility_window],
+    ['target_vol',fmt(ec.target_volatility,3)],
+    ['vol_adjust',ec.enable_volatility_adjustment?'ON':'OFF'],
+    ['slippage',fmt((ec.slippage_pct||0)*100,3)+'%'],
+    ['fee',fmt((ec.fee_pct||0)*100,3)+'%'],
+    ['exit_loss_bars',ec.exit_on_loss_after_bars],
+    ['exit_profit_bars',ec.exit_on_profit_after_bars],
+    ['profit_thresh',fmt((ec.profit_threshold_pct||0)*100,1)+'%'],
+  ];
+  var ecHTML=ecPairs.map(function(p){return p[0]+'='+p[1];}).join(' | ');
 
   area.textContent='';
   area.insertAdjacentHTML('beforeend',

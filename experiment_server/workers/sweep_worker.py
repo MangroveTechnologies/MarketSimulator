@@ -68,7 +68,7 @@ def _extract_metrics(result: dict[str, Any]) -> dict[str, Any]:
     return {
         "total_trades": total_trades,
         "win_rate": round(float(m.get("win_rate") or 0), 4),
-        "total_return": round(float(m.get("annual_return") or 0), 4),
+        "total_return": round(float(m.get("total_return") or 0), 4),
         "sharpe_ratio": round(float(m.get("sharpe_ratio") or 0), 4),
         "sortino_ratio": round(float(m.get("sortino_ratio") or 0), 4),
         "max_drawdown": round(float(m.get("max_drawdown") or 0), 4),

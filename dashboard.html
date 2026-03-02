@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experiment Framework Dashboard</title>
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242734;--border:#2e3240;--text:#e2e4e9;--text-dim:#8b8fa3;--accent:#22d3a7;--accent-dim:#1a9e7e;--danger:#ef4444;--trigger:#6366f1;--filter:#f59e0b;--sweep-on:#22d3a7;--sweep-off:#4b5060}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+h1{font-size:1.5rem;font-weight:600;margin-bottom:4px}
+.subtitle{color:var(--text-dim);font-size:0.85rem;margin-bottom:24px}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;transition:background .15s}
+.section-header:hover{background:var(--surface2)}
+.section-title{font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:8px}
+.badge{font-size:.7rem;padding:2px 8px;border-radius:10px;background:var(--accent-dim);color:var(--bg);font-weight:600}
+.chevron{transition:transform .2s;font-size:.8rem;color:var(--text-dim)}
+.collapsed .chevron{transform:rotate(-90deg)}
+.collapsed .section-body{display:none}
+.section-body{padding:0 16px 16px}
+input[type=text],input[type=number],textarea,select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:.85rem;width:100%;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+label{font-size:.8rem;color:var(--text-dim);display:block;margin-bottom:4px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.table{width:100%;border-collapse:collapse;font-size:.8rem}
+.table th{text-align:left;padding:8px;color:var(--text-dim);border-bottom:1px solid var(--border);font-weight:600;font-size:.75rem;text-transform:uppercase;cursor:pointer}
+.table th:hover{color:var(--accent)}
+.table td{padding:8px;border-bottom:1px solid var(--border)}
+.table tr:hover td{background:var(--surface2)}
+.table input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.sweep-toggle{width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background .2s}
+.sweep-on{background:var(--sweep-on)}.sweep-off{background:var(--sweep-off)}
+.sweep-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .2s}
+.knob-on{left:20px}.knob-off{left:2px}
+.mode-opts{display:flex;gap:16px;margin-bottom:12px}
+.mode-opt{padding:12px 20px;border-radius:8px;border:2px solid var(--border);cursor:pointer;flex:1;transition:all .15s}
+.mode-opt.active{border-color:var(--accent);background:rgba(34,211,167,.08)}
+.mode-opt h4{font-size:.9rem;margin-bottom:4px}.mode-opt p{font-size:.75rem;color:var(--text-dim)}
+.run-count{font-size:1.5rem;font-weight:700;color:var(--accent);font-family:monospace}
+.actions{display:flex;gap:12px;margin-top:20px}
+.btn{padding:10px 24px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:.85rem;transition:all .15s}
+.btn-primary{background:var(--accent);color:var(--bg)}.btn-primary:hover{background:#2aedb8}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{border-color:var(--accent)}
+.random-controls{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}
+.random-controls .ctrl{display:flex;flex-direction:column;gap:4px}
+.random-controls input{width:80px}
+.param-row{display:flex;gap:6px;align-items:center;margin-bottom:4px;font-size:.8rem;flex-wrap:wrap}
+.param-row label{margin-bottom:0;font-size:.65rem;min-width:25px}
+.param-row input[type=number]{width:65px;padding:4px 6px;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Experiment Framework</h1>
+<p class="subtitle">Configure and launch backtest sweep experiments</p>
+<div id="app">Loading...</div>
+</div>
+<script>
+// NOTE: This dashboard uses insertAdjacentHTML for rendering its own
+// controlled template strings. No user-supplied content is injected
+// without escaping via the esc() function.
+const API='/api/v1';
+let datasets=[],signals=[],execDefaults={};
+let state={name:'experiment_001',desc:'',selectedDS:new Set(),
+  mode:'random',nRandom:10000,seed:42,workers:2,
+  rs:{n_entry_triggers:1,min_entry_filters:1,max_entry_filters:3,min_exit_triggers:0,max_exit_triggers:1,min_exit_filters:0,max_exit_filters:3},
+  entrySignals:[],gridNParams:3,execSweeps:{},_lastExpId:null};
+
+function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
+
+async function init(){
+  try{
+    const[dsR,sigR,ecR]=await Promise.all([
+      fetch(API+'/datasets').then(r=>r.json()),
+      fetch(API+'/signals').then(r=>r.json()),
+      fetch(API+'/exec-config/defaults').then(r=>r.json()),
+    ]);
+    datasets=dsR;signals=sigR;execDefaults=ecR;
+    Object.keys(execDefaults).forEach(k=>{
+      state.execSweeps[k]={enabled:false,min:execDefaults[k],max:execDefaults[k],step:1};
+    });
+    // Select all datasets by default
+    datasets.forEach(d=>state.selectedDS.add(d.asset+'_'+d.timeframe));
+    render();
+  }catch(e){document.getElementById('app').textContent='Failed to load: '+e.message;}
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const runs=computeRuns();
+
+  // Dataset rows
+  const dsRows=datasets.map(d=>{
+    const k=d.asset+'_'+d.timeframe;
+    return '<tr><td><input type=checkbox '+(state.selectedDS.has(k)?'checked':'')+' data-ds="'+esc(k)+'"></td><td><strong>'+esc(d.asset)+'</strong></td><td>'+esc(d.timeframe)+'</td><td>'+esc(d.start_date)+'</td><td>'+esc(d.end_date)+'</td><td>'+d.rows+'</td></tr>';
+  }).join('');
+
+  // Exec config rows
+  let sweptN=0;
+  const execRows=Object.entries(execDefaults).map(function(pair){
+    const name=pair[0],def_val=pair[1];
+    const sw=state.execSweeps[name]||{enabled:false};
+    if(sw.enabled)sweptN++;
+    let extra='';
+    if(sw.enabled&&typeof def_val==='number'){
+      extra='<div class="param-row" style="margin-top:4px"><label>min</label><input type=number value="'+sw.min+'" data-exec="'+esc(name)+'" data-f="min"><label>max</label><input type=number value="'+sw.max+'" data-exec="'+esc(name)+'" data-f="max"><label>step</label><input type=number value="'+sw.step+'" data-exec="'+esc(name)+'" data-f="step"></div>';
+    }else if(sw.enabled&&typeof def_val==='boolean'){
+      extra='<div style="font-size:.75rem;color:var(--text-dim);margin-top:4px">Values: true, false</div>';
+    }
+    return '<tr><td style="font-family:monospace">'+esc(name)+'</td><td style="color:var(--text-dim)">'+typeof def_val+'</td><td style="font-family:monospace">'+(def_val===null?'null':def_val)+'</td><td><button class="sweep-toggle '+(sw.enabled?'sweep-on':'sweep-off')+'" data-sw="'+esc(name)+'"><span class="sweep-knob '+(sw.enabled?'knob-on':'knob-off')+'"></span></button>'+extra+'</td></tr>';
+  }).join('');
+
+  // Random mode controls
+  const randomHTML='<div class="random-controls">'
+    +'<div class="ctrl"><label>Runs per dataset</label><input type=number id=inp-n value="'+state.nRandom+'" min=1></div>'
+    +'<div class="ctrl"><label>Entry triggers</label><input type=number value="'+state.rs.n_entry_triggers+'" data-rs="n_entry_triggers" min=1 max=5></div>'
+    +'<div class="ctrl"><label>Min entry filters</label><input type=number value="'+state.rs.min_entry_filters+'" data-rs="min_entry_filters" min=0></div>'
+    +'<div class="ctrl"><label>Max entry filters</label><input type=number value="'+state.rs.max_entry_filters+'" data-rs="max_entry_filters" min=0></div>'
+    +'<div class="ctrl"><label>Min exit triggers</label><input type=number value="'+state.rs.min_exit_triggers+'" data-rs="min_exit_triggers" min=0></div>'
+    +'<div class="ctrl"><label>Max exit triggers</label><input type=number value="'+state.rs.max_exit_triggers+'" data-rs="max_exit_triggers" min=0></div>'
+    +'<div class="ctrl"><label>Min exit filters</label><input type=number value="'+state.rs.min_exit_filters+'" data-rs="min_exit_filters" min=0></div>'
+    +'<div class="ctrl"><label>Max exit filters</label><input type=number value="'+state.rs.max_exit_filters+'" data-rs="max_exit_filters" min=0></div>'
+    +'</div>';
+
+  app.textContent='';
+  app.insertAdjacentHTML('beforeend',
+    '<div class="section"><div class="section-header" data-toggle="s1"><div class="section-title">Experiment Name</div><span class="chevron">&#9660;</span></div><div class="section-body"><div class="row"><div><label>Name</label><input type=text id=inp-name value="'+esc(state.name)+'"></div><div><label>Description</label><input type=text id=inp-desc value="'+esc(state.desc)+'"></div></div></div></div>'
+
+    +'<div class="section"><div class="section-header" data-toggle="s2"><div class="section-title">Datasets <span class="badge">'+state.selectedDS.size+' selected</span></div><span class="chevron">&#9660;</span></div><div class="section-body"><table class="table"><thead><tr><th style="width:30px"><input type=checkbox id=ds-all '+(state.selectedDS.size===datasets.length?'checked':'')+'></th><th>Asset</th><th>Timeframe</th><th>Start</th><th>End</th><th>Rows</th></tr></thead><tbody>'+dsRows+'</tbody></table></div></div>'
+
+    +'<div class="section"><div class="section-header" data-toggle="s3"><div class="section-title">Search Mode</div><span class="chevron">&#9660;</span></div><div class="section-body">'
+    +'<div class="mode-opts"><div class="mode-opt '+(state.mode==='random'?'active':'')+'" data-mode="random"><h4>Random Search</h4><p>Randomly sample signals, params, and exec config.</p></div><div class="mode-opt '+(state.mode==='grid'?'active':'')+'" data-mode="grid"><h4>Grid Search</h4><p>Enumerate all combinations.</p></div></div>'
+    +(state.mode==='random'?randomHTML:'<div class="row"><div><label>Param combos per signal</label><input type=number id=inp-nparams value="'+state.gridNParams+'" min=1 max=50></div></div>')
+    +'<div style="display:flex;gap:24px;align-items:baseline;margin-top:12px"><div><span class="run-count">'+runs.toLocaleString()+'</span><br><span style="font-size:.8rem;color:var(--text-dim)">total runs</span></div><div><label>Workers/dataset</label><input type=number id=inp-w value="'+state.workers+'" min=1 max=24 style="width:80px"></div><div><label>Seed</label><input type=number id=inp-seed value="'+state.seed+'" style="width:80px"></div></div></div></div>'
+
+    +'<div class="section"><div class="section-header" data-toggle="s5"><div class="section-title">Execution Config <span class="badge">'+sweptN+' swept</span></div><span class="chevron">&#9660;</span></div><div class="section-body"><table class="table"><thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Sweep</th></tr></thead><tbody>'+execRows+'</tbody></table></div></div>'
+
+    +'<div class="actions"><button class="btn btn-secondary" id=btn-validate>Validate</button><button class="btn btn-primary" id=btn-launch>Launch Experiment</button></div><div id="status-area"></div>'
+  );
+  bindEvents();
+}
+
+function computeRuns(){
+  if(state.mode==='random')return(state.nRandom||10000)*state.selectedDS.size;
+  return 0; // grid needs server-side computation
+}
+
+function bindEvents(){
+  document.querySelectorAll('[data-toggle]').forEach(function(el){el.onclick=function(){el.parentElement.classList.toggle('collapsed');};});
+  document.querySelectorAll('[data-ds]').forEach(function(el){el.onchange=function(){var k=el.dataset.ds;state.selectedDS.has(k)?state.selectedDS.delete(k):state.selectedDS.add(k);render();};});
+  var dsAll=document.getElementById('ds-all');
+  if(dsAll)dsAll.onchange=function(){datasets.forEach(function(d){var k=d.asset+'_'+d.timeframe;dsAll.checked?state.selectedDS.add(k):state.selectedDS.delete(k);});render();};
+  document.querySelectorAll('[data-mode]').forEach(function(el){el.onclick=function(){state.mode=el.dataset.mode;render();};});
+  document.querySelectorAll('[data-rs]').forEach(function(el){el.onchange=function(){state.rs[el.dataset.rs]=parseInt(el.value)||0;render();};});
+  document.querySelectorAll('[data-sw]').forEach(function(el){el.onclick=function(){
+    var n=el.dataset.sw,sw=state.execSweeps[n];sw.enabled=!sw.enabled;
+    if(sw.enabled){sw.min=execDefaults[n];sw.max=execDefaults[n];sw.step=(typeof execDefaults[n]==='number'&&!Number.isInteger(execDefaults[n]))?.5:1;}
+    render();
+  };});
+  document.querySelectorAll('[data-exec][data-f]').forEach(function(el){el.onchange=function(){state.execSweeps[el.dataset.exec][el.dataset.f]=parseFloat(el.value);render();};});
+  var inpN=document.getElementById('inp-n');if(inpN)inpN.onchange=function(){state.nRandom=parseInt(inpN.value)||10000;render();};
+  var inpNP=document.getElementById('inp-nparams');if(inpNP)inpNP.onchange=function(){state.gridNParams=parseInt(inpNP.value)||3;render();};
+  var inpW=document.getElementById('inp-w');if(inpW)inpW.onchange=function(){state.workers=parseInt(inpW.value)||2;};
+  var inpS=document.getElementById('inp-seed');if(inpS)inpS.onchange=function(){state.seed=parseInt(inpS.value)||42;};
+  var inpName=document.getElementById('inp-name');if(inpName)inpName.onchange=function(){state.name=inpName.value;};
+  var inpDesc=document.getElementById('inp-desc');if(inpDesc)inpDesc.onchange=function(){state.desc=inpDesc.value;};
+  var btnV=document.getElementById('btn-validate');if(btnV)btnV.addEventListener('click',doValidate);
+  var btnL=document.getElementById('btn-launch');if(btnL)btnL.addEventListener('click',doLaunch);
+}
+
+function buildConfig(){
+  var ds=[];
+  state.selectedDS.forEach(function(k){var d=datasets.find(function(x){return x.asset+'_'+x.timeframe===k;});if(d)ds.push(d);});
+  var sweepAxes=[];
+  Object.entries(state.execSweeps).forEach(function(pair){
+    var name=pair[0],sw=pair[1];
+    if(!sw.enabled)return;
+    var d=execDefaults[name];
+    if(typeof d==='boolean'){sweepAxes.push({param:name,values:[true,false]});return;}
+    if(typeof d==='string')return;
+    sweepAxes.push({param:name,min:sw.min,max:sw.max,step:sw.step});
+  });
+  var base={};Object.entries(execDefaults).forEach(function(p){base[p[0]]=p[1];});
+  var config={name:state.name,description:state.desc,seed:state.seed,search_mode:state.mode,datasets:ds,execution_config:{base:base,sweep_axes:sweepAxes},workers_per_dataset:state.workers};
+  if(state.mode==='random'){config.n_random=state.nRandom;config.random_signals=state.rs;}
+  else{config.grid_signals={n_param_combos:state.gridNParams};}
+  return config;
+}
+
+async function doValidate(){
+  var area=document.getElementById('status-area');
+  area.textContent='Validating...';
+  try{
+    var config=buildConfig();
+    var createR=await fetch(API+'/experiments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
+    var created=await createR.json();
+    if(!createR.ok){area.textContent='Create failed: '+JSON.stringify(created);return;}
+    var valR=await fetch(API+'/experiments/'+created.experiment_id+'/validate',{method:'POST'});
+    var val=await valR.json();
+    if(valR.ok){
+      area.textContent='Valid! '+(val.total_runs||0).toLocaleString()+' total runs. ID: '+created.experiment_id;
+      area.style.color='var(--accent)';
+      state._lastExpId=created.experiment_id;
+    }else{
+      area.textContent='Validation failed: '+JSON.stringify(val.detail);
+      area.style.color='var(--danger)';
+    }
+  }catch(e){area.textContent='Error: '+e.message;area.style.color='var(--danger)';}
+}
+
+async function doLaunch(){
+  var area=document.getElementById('status-area');
+  if(!state._lastExpId){area.textContent='Validate first!';area.style.color='var(--danger)';return;}
+  area.textContent='Launching...';
+  try{
+    var r=await fetch(API+'/experiments/'+state._lastExpId+'/launch',{method:'POST'});
+    var data=await r.json();
+    if(r.ok){
+      area.textContent='Launched! '+data.total_runs+' runs across '+data.workers+' workers.';
+      area.style.color='var(--accent)';
+    }else{
+      area.textContent='Launch failed: '+JSON.stringify(data);
+      area.style.color='var(--danger)';
+    }
+  }catch(e){area.textContent='Error: '+e.message;area.style.color='var(--danger)';}
+}
+
+init();
+</script>
+</body>
+</html>

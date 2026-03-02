@@ -60,9 +60,11 @@ label{font-size:.8rem;color:var(--text-dim);display:block;margin-bottom:4px}
 </head>
 <body>
 <div class="container">
-<div class="top-bar">
-  <div><h1>Experiment Framework</h1><p class="subtitle">Configure and launch backtest sweep experiments</p></div>
-  <button class="theme-btn" onclick="toggleTheme()">Toggle Light/Dark</button>
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+  <a href="/" style="padding:10px 20px;color:var(--accent);text-decoration:none;font-weight:600;font-size:.9rem;border-bottom:2px solid var(--accent);margin-bottom:-2px">Configure</a>
+  <a href="/explore" style="padding:10px 20px;color:var(--text-dim);text-decoration:none;font-weight:600;font-size:.9rem;border-bottom:2px solid transparent;margin-bottom:-2px">Explore</a>
+  <div style="flex:1"></div>
+  <button class="theme-btn" style="align-self:center;margin-bottom:4px" onclick="toggleTheme()">Theme</button>
 </div>
 <div id="app">Loading...</div>
 </div>

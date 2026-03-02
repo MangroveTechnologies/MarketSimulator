@@ -38,15 +38,22 @@ def create_app() -> FastAPI:
     app.include_router(templates_router, prefix="/api/v1")
     app.include_router(exec_config_router, prefix="/api/v1")
 
-    # Serve the dashboard HTML at root
+    # Serve HTML pages
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    dashboard_path = os.path.join(base_dir, "dashboard.html")
 
     @app.get("/")
     async def serve_dashboard():
-        if os.path.exists(dashboard_path):
-            return FileResponse(dashboard_path, media_type="text/html")
-        return {"message": "Dashboard not found. Place dashboard.html in MarketSimulator root."}
+        path = os.path.join(base_dir, "dashboard.html")
+        if os.path.exists(path):
+            return FileResponse(path, media_type="text/html")
+        return {"message": "dashboard.html not found"}
+
+    @app.get("/explore")
+    async def serve_explore():
+        path = os.path.join(base_dir, "explore.html")
+        if os.path.exists(path):
+            return FileResponse(path, media_type="text/html")
+        return {"message": "explore.html not found"}
 
     return app
 

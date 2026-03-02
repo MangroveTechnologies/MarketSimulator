@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experiment Explorer</title>
+<style>
+[data-theme=dark]{--bg:#0f1117;--surface:#1a1d27;--surface2:#242734;--border:#2e3240;--text:#e2e4e9;--text-dim:#8b8fa3;--accent:#22d3a7;--accent-dim:#1a9e7e;--danger:#ef4444;--trigger:#6366f1;--filter:#f59e0b}
+[data-theme=light]{--bg:#f5f5f7;--surface:#ffffff;--surface2:#f0f0f2;--border:#d1d5db;--text:#1f2937;--text-dim:#6b7280;--accent:#059669;--accent-dim:#047857;--danger:#dc2626;--trigger:#4f46e5;--filter:#d97706}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;transition:background .2s,color .2s}
+.container{max-width:1400px;margin:0 auto;padding:24px}
+.nav{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--border)}
+.nav a{padding:10px 20px;color:var(--text-dim);text-decoration:none;font-weight:600;font-size:.9rem;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.nav a:hover{color:var(--text)}
+.nav a.active{color:var(--accent);border-bottom-color:var(--accent)}
+.top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+h1{font-size:1.4rem;font-weight:600}
+.theme-btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;font-size:.8rem}
+select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:.85rem;font-family:inherit}
+input[type=number],input[type=text]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:.8rem;font-family:inherit}
+select:focus,input:focus{outline:none;border-color:var(--accent)}
+label{font-size:.75rem;color:var(--text-dim);display:block;margin-bottom:2px}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+.filter-group{display:flex;flex-direction:column;gap:2px}
+.filter-group select,.filter-group input{width:auto;min-width:100px}
+.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-weight:600;font-size:.8rem;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.9}
+.btn-sm{padding:4px 10px;font-size:.75rem}
+.results-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.8rem;color:var(--text-dim)}
+.table-wrap{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font-size:.8rem}
+.table th{text-align:left;padding:8px 10px;color:var(--text-dim);border-bottom:1px solid var(--border);font-weight:600;font-size:.7rem;text-transform:uppercase;cursor:pointer;white-space:nowrap;user-select:none}
+.table th:hover{color:var(--accent)}
+.table th.sorted{color:var(--accent)}
+.table td{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.table tr:hover td{background:var(--surface2)}
+.table tr.selected td{background:rgba(34,211,167,.1);border-left:3px solid var(--accent)}
+.mono{font-family:'SF Mono','Fira Code',monospace;font-size:.75rem}
+.positive{color:var(--accent)}.negative{color:var(--danger)}
+.pagination{display:flex;gap:8px;justify-content:center;margin-top:12px;align-items:center}
+.pagination button{padding:6px 12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:.8rem}
+.pagination button:hover{border-color:var(--accent)}
+.pagination button:disabled{opacity:.3;cursor:not-allowed}
+.detail-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-top:16px;overflow:hidden}
+.detail-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.detail-header h3{font-size:.9rem}
+.detail-body{padding:16px}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.metric-card{background:var(--surface2);border-radius:6px;padding:10px;text-align:center}
+.metric-val{font-size:1.1rem;font-weight:700;font-family:monospace}
+.metric-label{font-size:.65rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px}
+.signal-list{font-size:.8rem;margin-top:12px}
+.signal-list h4{font-size:.75rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px}
+.sig-badge{display:inline-block;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:600;text-transform:uppercase;margin-right:4px}
+.sig-trigger{background:var(--trigger);color:#fff}
+.sig-filter{background:var(--filter);color:#000}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="nav">
+  <a href="/">Configure</a>
+  <a href="/explore" class="active">Explore</a>
+</div>
+<div class="top-row">
+  <h1>Experiment Explorer</h1>
+  <button class="theme-btn" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Theme</button>
+</div>
+<div id="app">Loading experiments...</div>
+</div>
+<script>
+var API='/api/v1';
+var expState={experiments:[],selectedExp:null,results:[],total:0,offset:0,limit:50,sort:'sharpe_ratio',order:'desc',filters:{},detail:null};
+
+function esc(s){var d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
+function fmt(v,dec){if(v==null||isNaN(v))return'-';return Number(v).toFixed(dec||2);}
+function fmtPct(v){if(v==null||isNaN(v))return'-';return(Number(v)).toFixed(2)+'%';}
+
+async function init(){
+  try{
+    var r=await fetch(API+'/experiments');
+    expState.experiments=await r.json();
+    // Auto-select most recent non-draft
+    var running=expState.experiments.filter(function(e){return e.status!=='draft';});
+    if(running.length>0)expState.selectedExp=running[0].experiment_id;
+    renderApp();
+    if(expState.selectedExp)loadResults();
+  }catch(e){document.getElementById('app').textContent='Error: '+e.message;}
+}
+
+function renderApp(){
+  var app=document.getElementById('app');
+  var expOpts=expState.experiments.map(function(e){
+    return '<option value="'+esc(e.experiment_id)+'" '+(e.experiment_id===expState.selectedExp?'selected':'')+'>'+esc(e.name)+' ('+esc(e.status)+', '+(e.total_runs||'?')+' runs)</option>';
+  }).join('');
+
+  app.textContent='';
+  app.insertAdjacentHTML('beforeend',
+    '<div class="filter-group" style="margin-bottom:12px"><label>Experiment</label><select id="exp-select" style="min-width:300px">'+expOpts+'</select></div>'
+
+    +'<div class="filters">'
+    +'<div class="filter-group"><label>Dataset</label><select id="f-asset"><option value="">All</option></select></div>'
+    +'<div class="filter-group"><label>Trigger</label><select id="f-trigger"><option value="">All</option></select></div>'
+    +'<div class="filter-group"><label>Status</label><select id="f-status"><option value="">All</option><option value="ok">ok</option><option value="no_trades">no_trades</option><option value="error">error</option></select></div>'
+    +'<div class="filter-group"><label>Min trades</label><input type=number id="f-min-trades" value="0" min=0 style="width:70px"></div>'
+    +'<div class="filter-group"><label>Min Sharpe</label><input type=number id="f-min-sharpe" value="" step="0.1" style="width:70px"></div>'
+    +'<div class="filter-group"><label>Min win rate</label><input type=number id="f-min-wr" value="" step="0.05" style="width:70px"></div>'
+    +'<div class="filter-group" style="align-self:end"><button class="btn btn-primary" id="btn-search">Search</button></div>'
+    +'</div>'
+
+    +'<div class="results-info"><span id="results-count"></span><span id="results-sort"></span></div>'
+    +'<div class="table-wrap"><table class="table"><thead><tr id="results-head"></tr></thead><tbody id="results-body"></tbody></table></div>'
+    +'<div class="pagination" id="pagination"></div>'
+    +'<div id="detail-area"></div>'
+  );
+  bindAppEvents();
+}
+
+function bindAppEvents(){
+  var expSel=document.getElementById('exp-select');
+  if(expSel)expSel.onchange=function(){expState.selectedExp=expSel.value;expState.offset=0;expState.detail=null;loadResults();};
+  var btnSearch=document.getElementById('btn-search');
+  if(btnSearch)btnSearch.onclick=function(){expState.offset=0;loadResults();};
+  // Enter key in filter inputs triggers search
+  document.querySelectorAll('.filters input').forEach(function(el){el.onkeydown=function(e){if(e.key==='Enter')loadResults();};});
+}
+
+async function loadResults(){
+  if(!expState.selectedExp)return;
+  var params=new URLSearchParams();
+  params.set('sort',expState.sort);
+  params.set('order',expState.order);
+  params.set('limit',expState.limit);
+  params.set('offset',expState.offset);
+
+  var fAsset=document.getElementById('f-asset');if(fAsset&&fAsset.value)params.set('asset',fAsset.value);
+  var fTrigger=document.getElementById('f-trigger');if(fTrigger&&fTrigger.value)params.set('trigger_name',fTrigger.value);
+  var fStatus=document.getElementById('f-status');if(fStatus&&fStatus.value)params.set('status',fStatus.value);
+  var fMinT=document.getElementById('f-min-trades');if(fMinT&&fMinT.value>0)params.set('min_trades',fMinT.value);
+  var fMinS=document.getElementById('f-min-sharpe');if(fMinS&&fMinS.value)params.set('min_sharpe',fMinS.value);
+  var fMinWR=document.getElementById('f-min-wr');if(fMinWR&&fMinWR.value)params.set('min_win_rate',fMinWR.value);
+
+  try{
+    var r=await fetch(API+'/experiments/'+expState.selectedExp+'/results?'+params.toString());
+    var data=await r.json();
+    expState.results=data.results||[];
+    expState.total=data.total||0;
+    renderResults();
+  }catch(e){
+    document.getElementById('results-body').textContent='Error loading: '+e.message;
+  }
+}
+
+var COLUMNS=[
+  {key:'run_index',label:'#',w:'50px'},
+  {key:'asset',label:'Asset'},
+  {key:'timeframe',label:'TF'},
+  {key:'trigger_name',label:'Trigger'},
+  {key:'num_entry_signals',label:'Sigs'},
+  {key:'reward_factor',label:'RF',fmt:function(v){return fmt(v,1);}},
+  {key:'total_trades',label:'Trades'},
+  {key:'win_rate',label:'Win%',fmt:function(v){return fmt(v*100,1)+'%';}},
+  {key:'total_return',label:'Return',fmt:function(v){return fmt(v,2);}},
+  {key:'sharpe_ratio',label:'Sharpe',fmt:function(v){return fmt(v,2);}},
+  {key:'sortino_ratio',label:'Sortino',fmt:function(v){return fmt(v,2);}},
+  {key:'max_drawdown',label:'MaxDD',fmt:function(v){return fmt(v,2)+'%';}},
+  {key:'calmar_ratio',label:'Calmar',fmt:function(v){return fmt(v,2);}},
+  {key:'net_pnl',label:'PnL',fmt:function(v){return fmt(v,0);}},
+  {key:'status',label:'Status'},
+];
+
+function renderResults(){
+  // Header
+  var head=document.getElementById('results-head');
+  head.textContent='';
+  head.insertAdjacentHTML('beforeend',COLUMNS.map(function(c){
+    var cls=c.key===expState.sort?'sorted':'';
+    var arrow=c.key===expState.sort?(expState.order==='desc'?' v':' ^'):'';
+    return '<th class="'+cls+'" data-sort="'+esc(c.key)+'"'+(c.w?' style="width:'+c.w+'"':'')+'>'+esc(c.label)+arrow+'</th>';
+  }).join(''));
+
+  // Bind sort
+  document.querySelectorAll('[data-sort]').forEach(function(el){
+    el.onclick=function(){
+      var col=el.dataset.sort;
+      if(expState.sort===col)expState.order=expState.order==='desc'?'asc':'desc';
+      else{expState.sort=col;expState.order='desc';}
+      expState.offset=0;
+      loadResults();
+    };
+  });
+
+  // Body
+  var body=document.getElementById('results-body');
+  body.textContent='';
+  if(expState.results.length===0){
+    body.insertAdjacentHTML('beforeend','<tr><td colspan="'+COLUMNS.length+'" style="text-align:center;padding:20px;color:var(--text-dim)">No results found</td></tr>');
+  }else{
+    body.insertAdjacentHTML('beforeend',expState.results.map(function(row){
+      var sel=expState.detail&&expState.detail.run_index===row.run_index?'selected':'';
+      return '<tr class="'+sel+'" data-ridx="'+row.run_index+'">'+COLUMNS.map(function(c){
+        var val=row[c.key];
+        var display=c.fmt?c.fmt(val):(val==null?'-':esc(String(val)));
+        var cls='';
+        if(c.key==='net_pnl'||c.key==='total_return')cls=val>0?'positive':val<0?'negative':'';
+        if(c.key==='sharpe_ratio'||c.key==='sortino_ratio'||c.key==='calmar_ratio')cls='mono';
+        return '<td class="'+cls+'">'+display+'</td>';
+      }).join('')+'</tr>';
+    }).join(''));
+
+    // Click rows
+    document.querySelectorAll('[data-ridx]').forEach(function(el){
+      el.onclick=function(){loadDetail(parseInt(el.dataset.ridx));};
+    });
+  }
+
+  // Count
+  var countEl=document.getElementById('results-count');
+  var start=expState.offset+1;
+  var end=Math.min(expState.offset+expState.limit,expState.total);
+  countEl.textContent='Showing '+start+'-'+end+' of '+expState.total.toLocaleString()+' results';
+
+  // Sort info
+  document.getElementById('results-sort').textContent='Sorted by '+expState.sort+' '+expState.order;
+
+  // Pagination
+  var pag=document.getElementById('pagination');
+  pag.textContent='';
+  var totalPages=Math.ceil(expState.total/expState.limit);
+  var currentPage=Math.floor(expState.offset/expState.limit)+1;
+  pag.insertAdjacentHTML('beforeend',
+    '<button '+(currentPage<=1?'disabled':'')+' id="pg-prev">Prev</button>'
+    +'<span style="font-size:.8rem;color:var(--text-dim)">Page '+currentPage+' of '+totalPages+'</span>'
+    +'<button '+(currentPage>=totalPages?'disabled':'')+' id="pg-next">Next</button>'
+  );
+  var pgPrev=document.getElementById('pg-prev');if(pgPrev)pgPrev.onclick=function(){expState.offset=Math.max(0,expState.offset-expState.limit);loadResults();};
+  var pgNext=document.getElementById('pg-next');if(pgNext)pgNext.onclick=function(){expState.offset+=expState.limit;loadResults();};
+}
+
+async function loadDetail(runIndex){
+  if(!expState.selectedExp)return;
+  try{
+    var r=await fetch(API+'/experiments/'+expState.selectedExp+'/results/'+runIndex+'/visualize');
+    var data=await r.json();
+    expState.detail=data;
+    expState.detail.run_index=runIndex;
+    renderDetail();
+    // Re-render table to highlight selected row
+    renderResults();
+  }catch(e){
+    document.getElementById('detail-area').textContent='Error: '+e.message;
+  }
+}
+
+function renderDetail(){
+  var area=document.getElementById('detail-area');
+  if(!expState.detail){area.textContent='';return;}
+  var d=expState.detail;
+  var m=d.metrics||{};
+  var sc=d.strategy_config||{};
+  var prov=d.provenance||{};
+  var entry=sc.entry||[];
+  var exit_sigs=sc.exit||[];
+
+  var metricsHTML=[
+    {label:'Sharpe',val:fmt(m.sharpe_ratio,2)},
+    {label:'Sortino',val:fmt(m.sortino_ratio,2)},
+    {label:'Return',val:fmt(m.total_return,2)+'%'},
+    {label:'Max DD',val:fmt(m.max_drawdown,2)+'%'},
+    {label:'Calmar',val:fmt(m.calmar_ratio,2)},
+    {label:'Trades',val:m.total_trades||0},
+    {label:'Win Rate',val:fmt((m.win_rate||0)*100,1)+'%'},
+    {label:'Net PnL',val:'$'+fmt(m.net_pnl,0)},
+    {label:'End Balance',val:'$'+fmt(m.ending_balance,0)},
+  ].map(function(item){
+    return '<div class="metric-card"><div class="metric-val">'+esc(String(item.val))+'</div><div class="metric-label">'+esc(item.label)+'</div></div>';
+  }).join('');
+
+  var entryHTML=entry.map(function(s){
+    var badge=s.signal_type==='TRIGGER'?'sig-trigger':'sig-filter';
+    var params=Object.entries(s.params||{}).map(function(p){return p[0]+'='+p[1];}).join(', ');
+    return '<div style="margin-bottom:4px"><span class="sig-badge '+badge+'">'+esc(s.signal_type)+'</span><strong>'+esc(s.name)+'</strong> <span class="mono" style="color:var(--text-dim)">'+esc(params)+'</span></div>';
+  }).join('');
+
+  var exitHTML=exit_sigs.length===0?'<span style="color:var(--text-dim)">None (using SL/TP defaults)</span>':exit_sigs.map(function(s){
+    var badge=s.signal_type==='TRIGGER'?'sig-trigger':'sig-filter';
+    var params=Object.entries(s.params||{}).map(function(p){return p[0]+'='+p[1];}).join(', ');
+    return '<div style="margin-bottom:4px"><span class="sig-badge '+badge+'">'+esc(s.signal_type)+'</span><strong>'+esc(s.name)+'</strong> <span class="mono" style="color:var(--text-dim)">'+esc(params)+'</span></div>';
+  }).join('');
+
+  // Key exec config values
+  var ec=sc.execution_config||{};
+  var ecHTML=[
+    'reward_factor='+fmt(ec.reward_factor,1),
+    'max_risk='+fmt(ec.max_risk_per_trade,3),
+    'cooldown='+ec.cooldown_bars,
+    'atr_period='+ec.atr_period,
+    'atr_factor='+fmt(ec.atr_volatility_factor,1),
+    'max_hold='+ec.max_hold_bars,
+  ].join(' | ');
+
+  area.textContent='';
+  area.insertAdjacentHTML('beforeend',
+    '<div class="detail-panel">'
+    +'<div class="detail-header"><h3>Run #'+d.run_index+' Detail</h3><span class="mono" style="color:var(--text-dim)">'+esc(sc.asset||'')+' | '+esc(prov.data_file_path||'')+'</span></div>'
+    +'<div class="detail-body">'
+    +'<div class="metrics-grid">'+metricsHTML+'</div>'
+    +'<div class="signal-list"><h4>Entry Signals</h4>'+entryHTML+'</div>'
+    +'<div class="signal-list" style="margin-top:8px"><h4>Exit Signals</h4>'+exitHTML+'</div>'
+    +'<div style="margin-top:12px;font-size:.75rem;color:var(--text-dim);font-family:monospace">'+esc(ecHTML)+'</div>'
+    +'<div style="margin-top:8px;font-size:.7rem;color:var(--text-dim)">Provenance: seed='+esc(String(prov.rng_seed||''))+' code='+esc(prov.code_version||'')+' hash='+esc(String(prov.data_file_hash||'').substring(0,20))+'...</div>'
+    +'</div></div>'
+  );
+}
+
+init();
+</script>
+</body>
+</html>

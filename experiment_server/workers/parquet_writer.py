@@ -21,6 +21,7 @@ RESULT_SCHEMA = pa.schema([
     # Identity
     ("experiment_id", pa.string()),
     ("run_index", pa.int32()),
+    ("config_hash", pa.string()),
     # Provenance
     ("code_version", pa.string()),
     ("rng_seed", pa.int32()),

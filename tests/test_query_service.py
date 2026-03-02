@@ -14,6 +14,7 @@ def _make_row(run_index: int, asset: str = "BTC", sharpe: float = 1.0,
     return {
         "experiment_id": "test_exp",
         "run_index": run_index,
+        "config_hash": f"hash{run_index:04d}",
         "code_version": "abc",
         "rng_seed": 42,
         "data_file_path": "test.csv",

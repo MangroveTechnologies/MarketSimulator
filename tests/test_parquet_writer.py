@@ -14,6 +14,7 @@ def _make_test_row(run_index: int, asset: str = "BTC") -> dict:
     return {
         "experiment_id": "test_exp",
         "run_index": run_index,
+        "config_hash": f"testhash{run_index:04d}",
         "code_version": "abc123",
         "rng_seed": 42,
         "data_file_path": "test.csv",
@@ -178,6 +179,6 @@ def test_experiment_config_in_metadata():
         assert stored_config["experiment_id"] == "meta_test"
 
 
-def test_schema_has_67_columns():
-    """Verify the schema has exactly 67 columns."""
-    assert len(RESULT_SCHEMA) == 67
+def test_schema_has_68_columns():
+    """Verify the schema has exactly 68 columns (67 + config_hash)."""
+    assert len(RESULT_SCHEMA) == 68

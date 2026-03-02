@@ -291,11 +291,19 @@ def execute_sweep_job(
 
         elapsed = round(time.time() - t0, 2)
 
+        # Compute config hash for dedup
+        from experiment_server.services.hashing import compute_config_hash
+        cfg_hash = compute_config_hash(
+            run.entry_json, run.exit_json, run.exec_config,
+            run.asset, run.timeframe, run.start_date, run.end_date,
+        )
+
         # Build the full result row
         row = flatten_strategy_config(
             strategy_config,
             run_index=run.run_index,
             experiment_id=experiment_id,
+            config_hash=cfg_hash,
             code_version=code_version,
             rng_seed=run_seed,
             data_file_path=run.data_file,

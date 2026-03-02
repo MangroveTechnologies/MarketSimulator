@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -21,7 +20,10 @@ class ParamSweep(BaseModel):
 
 
 class SignalConfig(BaseModel):
-    """A signal selected for sweeping with its param sweep definitions."""
+    """A signal selected for sweeping with its param sweep definitions.
+
+    Used in grid mode where the user picks specific signals.
+    """
 
     name: str
     signal_type: Literal["TRIGGER", "FILTER"]
@@ -30,13 +32,43 @@ class SignalConfig(BaseModel):
 
 
 class SignalSelection(BaseModel):
-    """Entry or exit signal configuration for an experiment."""
+    """Entry or exit signal configuration for an experiment.
+
+    In grid mode: triggers and filters are explicit lists of SignalConfig.
+    In random mode: triggers and filters are empty, and the counts below
+    control how many are randomly drawn per run.
+    """
 
     triggers: list[SignalConfig] = Field(default_factory=list)
     filters: list[SignalConfig] = Field(default_factory=list)
     min_filters: int = 1
     max_filters: int = 1
     constraints: list[list[str]] = Field(default_factory=list)
+
+
+class RandomSignalConfig(BaseModel):
+    """Signal count configuration for random search mode.
+
+    Controls how many signals are randomly drawn per run.
+    """
+
+    n_entry_triggers: int = 1
+    min_entry_filters: int = 1
+    max_entry_filters: int = 3
+    min_exit_triggers: int = 0
+    max_exit_triggers: int = 1
+    min_exit_filters: int = 0
+    max_exit_filters: int = 3
+    n_param_draws: int = 1  # params randomly drawn from KB ranges
+
+
+class GridSignalConfig(BaseModel):
+    """Signal config for grid search mode.
+
+    Controls how many param combos per signal in grid enumeration.
+    """
+
+    n_param_combos: int = 3  # param combos per signal
 
 
 class ExecConfigSweep(BaseModel):
@@ -59,18 +91,30 @@ class DatasetSelection(BaseModel):
 
 
 class ExperimentConfig(BaseModel):
-    """Full experiment configuration -- the top-level object."""
+    """Full experiment configuration -- the top-level object.
+
+    Two search modes:
+    - grid: enumerate all signal combos x param combos x exec config variants
+    - random: randomly sample N runs (signals, params, exec config all random)
+    """
 
     experiment_id: str = ""
     name: str
     description: str = ""
     seed: int = 42
     search_mode: Literal["grid", "random"] = "grid"
-    n_random: int | None = None
+
+    # Random mode settings
+    n_random: int | None = None  # total runs per dataset
+    random_signals: RandomSignalConfig = Field(default_factory=RandomSignalConfig)
+
+    # Grid mode settings
+    grid_signals: GridSignalConfig = Field(default_factory=GridSignalConfig)
+
     datasets: list[DatasetSelection]
-    entry_signals: SignalSelection
+    entry_signals: SignalSelection = Field(default_factory=SignalSelection)
     exit_signals: SignalSelection = Field(default_factory=SignalSelection)
-    execution_config: ExecConfigSweep
+    execution_config: ExecConfigSweep = Field(default_factory=ExecConfigSweep)
     workers_per_dataset: int = 2
     code_version: str = ""
     notes: str = ""

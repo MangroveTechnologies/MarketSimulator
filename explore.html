@@ -153,23 +153,19 @@ async function loadResults(){
 }
 
 var COLUMNS=[
-  {key:'run_index',label:'#',w:'50px'},
+  {key:'run_index',label:'Run #',w:'60px'},
   {key:'asset',label:'Asset'},
-  {key:'timeframe',label:'TF'},
-  {key:'trigger_name',label:'Trigger'},
-  {key:'num_entry_signals',label:'Entry'},
-  {key:'num_exit_signals',label:'Exit'},
-  {key:'reward_factor',label:'RF',fmt:function(v){return fmt(v,1);}},
-  {key:'cooldown_bars',label:'CD'},
-  {key:'max_risk_per_trade',label:'Risk',fmt:function(v){return fmt(v*100,2)+'%';}},
+  {key:'timeframe',label:'Timeframe'},
   {key:'total_trades',label:'Trades'},
-  {key:'win_rate',label:'Win%',fmt:function(v){return fmt(v,1)+'%';}},
-  {key:'total_return',label:'Return%',fmt:function(v){return fmt(v,2)+'%';}},
+  {key:'win_rate',label:'Win Rate',fmt:function(v){return fmt(v,1)+'%';}},
+  {key:'total_return',label:'Return',fmt:function(v){return fmt(v,2)+'%';}},
   {key:'sharpe_ratio',label:'Sharpe',fmt:function(v){return fmt(v,2);}},
   {key:'sortino_ratio',label:'Sortino',fmt:function(v){return fmt(v,2);}},
-  {key:'max_drawdown',label:'MaxDD%',fmt:function(v){return fmt(v,2)+'%';}},
+  {key:'max_drawdown',label:'Max Drawdown',fmt:function(v){return fmt(v,2)+'%';}},
   {key:'calmar_ratio',label:'Calmar',fmt:function(v){return fmt(v,2);}},
-  {key:'net_pnl',label:'PnL ($)',fmt:function(v){return '$'+fmt(v,2);}},
+  {key:'net_pnl',label:'Net PnL',fmt:function(v){return '$'+fmt(v,2);}},
+  {key:'starting_balance_result',label:'Start Bal',fmt:function(v){return '$'+fmt(v,0);}},
+  {key:'ending_balance',label:'End Bal',fmt:function(v){return '$'+fmt(v,2);}},
   {key:'status',label:'Status'},
 ];
 
@@ -266,64 +262,80 @@ function renderDetail(){
   var entry=sc.entry||[];
   var exit_sigs=sc.exit||[];
 
+  // --- Metrics ---
   var metricsHTML=[
-    {label:'Sharpe',val:fmt(m.sharpe_ratio,2)},
-    {label:'Sortino',val:fmt(m.sortino_ratio,2)},
-    {label:'Return',val:fmt(m.total_return,2)+'%'},
-    {label:'Max DD',val:fmt(m.max_drawdown,2)+'%'},
-    {label:'Calmar',val:fmt(m.calmar_ratio,2)},
-    {label:'Trades',val:m.total_trades||0},
+    {label:'Sharpe Ratio',val:fmt(m.sharpe_ratio,2)},
+    {label:'Sortino Ratio',val:fmt(m.sortino_ratio,2)},
+    {label:'Total Return',val:fmt(m.total_return,2)+'%'},
+    {label:'Max Drawdown',val:fmt(m.max_drawdown,2)+'%'},
+    {label:'Calmar Ratio',val:fmt(m.calmar_ratio,2)},
+    {label:'Total Trades',val:m.total_trades||0},
     {label:'Win Rate',val:fmt(m.win_rate||0,1)+'%'},
     {label:'Net PnL',val:'$'+fmt(m.net_pnl,2)},
-    {label:'End Balance',val:'$'+fmt(m.ending_balance,2)},
+    {label:'Starting Balance',val:'$'+fmt(m.ending_balance-(m.net_pnl||0),2)},
+    {label:'Ending Balance',val:'$'+fmt(m.ending_balance,2)},
   ].map(function(item){
     return '<div class="metric-card"><div class="metric-val">'+esc(String(item.val))+'</div><div class="metric-label">'+esc(item.label)+'</div></div>';
   }).join('');
 
-  var entryHTML=entry.map(function(s){
-    var badge=s.signal_type==='TRIGGER'?'sig-trigger':'sig-filter';
-    var params=Object.entries(s.params||{}).map(function(p){return p[0]+'='+p[1];}).join(', ');
-    return '<div style="margin-bottom:4px"><span class="sig-badge '+badge+'">'+esc(s.signal_type)+'</span><strong>'+esc(s.name)+'</strong> <span class="mono" style="color:var(--text-dim)">'+esc(params)+'</span></div>';
-  }).join('');
+  // --- Entry Signals (full detail) ---
+  function renderSignalDetail(sig){
+    var badge=sig.signal_type==='TRIGGER'?'sig-trigger':'sig-filter';
+    var paramsHTML=Object.entries(sig.params||{}).map(function(p){
+      return '<tr><td style="padding:2px 12px 2px 24px;color:var(--text-dim);font-size:.75rem">'+esc(p[0])+'</td><td class="mono" style="padding:2px 8px;font-size:.75rem">'+esc(String(p[1]))+'</td></tr>';
+    }).join('');
+    return '<div style="margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:6px">'
+      +'<span class="sig-badge '+badge+'">'+esc(sig.signal_type)+'</span>'
+      +'<strong style="font-size:.85rem">'+esc(sig.name)+'</strong>'
+      +'<span class="mono" style="color:var(--text-dim);font-size:.75rem;margin-left:8px">timeframe: '+esc(sig.timeframe||'')+'</span>'
+      +(paramsHTML?'<table style="margin-top:4px">'+paramsHTML+'</table>':'')
+      +'</div>';
+  }
+  var entryHTML=entry.length?entry.map(renderSignalDetail).join(''):'<span style="color:var(--text-dim)">None</span>';
+  var exitHTML=exit_sigs.length?exit_sigs.map(renderSignalDetail).join(''):'<span style="color:var(--text-dim)">None (using SL/TP from execution config)</span>';
 
-  var exitHTML=exit_sigs.length===0?'<span style="color:var(--text-dim)">None (using SL/TP defaults)</span>':exit_sigs.map(function(s){
-    var badge=s.signal_type==='TRIGGER'?'sig-trigger':'sig-filter';
-    var params=Object.entries(s.params||{}).map(function(p){return p[0]+'='+p[1];}).join(', ');
-    return '<div style="margin-bottom:4px"><span class="sig-badge '+badge+'">'+esc(s.signal_type)+'</span><strong>'+esc(s.name)+'</strong> <span class="mono" style="color:var(--text-dim)">'+esc(params)+'</span></div>';
-  }).join('');
-
-  // Exec config values -- show all meaningful ones
+  // --- Execution Config (full table) ---
   var ec=sc.execution_config||{};
-  var ecPairs=[
-    ['reward_factor',fmt(ec.reward_factor,1)],
-    ['max_risk',fmt((ec.max_risk_per_trade||0)*100,2)+'%'],
-    ['cooldown',ec.cooldown_bars],
-    ['atr_period',ec.atr_period],
-    ['atr_factor',fmt(ec.atr_volatility_factor,1)],
-    ['max_positions',ec.max_open_positions],
-    ['max_trades/day',ec.max_trades_per_day],
-    ['max_hold',ec.max_hold_bars],
-    ['vol_window',ec.volatility_window],
-    ['target_vol',fmt(ec.target_volatility,3)],
-    ['vol_adjust',ec.enable_volatility_adjustment?'ON':'OFF'],
-    ['slippage',fmt((ec.slippage_pct||0)*100,3)+'%'],
-    ['fee',fmt((ec.fee_pct||0)*100,3)+'%'],
-    ['exit_loss_bars',ec.exit_on_loss_after_bars],
-    ['exit_profit_bars',ec.exit_on_profit_after_bars],
-    ['profit_thresh',fmt((ec.profit_threshold_pct||0)*100,1)+'%'],
-  ];
-  var ecHTML=ecPairs.map(function(p){return p[0]+'='+p[1];}).join(' | ');
+  var ecEntries=Object.entries(ec).filter(function(p){return p[0]!=='__class__';}).sort(function(a,b){return a[0].localeCompare(b[0]);});
+  var ecTableHTML='<table class="table" style="font-size:.75rem"><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody>'
+    +ecEntries.map(function(p){
+      var val=p[1];
+      if(val===null)val='null';
+      else if(typeof val==='boolean')val=val?'true':'false';
+      else if(typeof val==='number')val=String(Math.round(val*10000)/10000);
+      return '<tr><td class="mono">'+esc(p[0])+'</td><td class="mono">'+esc(String(val))+'</td></tr>';
+    }).join('')
+    +'</tbody></table>';
+
+  // --- Provenance ---
+  var provHTML='<table style="font-size:.75rem"><tbody>'
+    +'<tr><td style="padding:2px 12px 2px 0;color:var(--text-dim)">Data file</td><td class="mono">'+esc(prov.data_file_path||'')+'</td></tr>'
+    +'<tr><td style="padding:2px 12px 2px 0;color:var(--text-dim)">File hash</td><td class="mono">'+esc(String(prov.data_file_hash||''))+'</td></tr>'
+    +'<tr><td style="padding:2px 12px 2px 0;color:var(--text-dim)">RNG seed</td><td class="mono">'+esc(String(prov.rng_seed||''))+'</td></tr>'
+    +'<tr><td style="padding:2px 12px 2px 0;color:var(--text-dim)">Code version</td><td class="mono">'+esc(prov.code_version||'(not set)')+'</td></tr>'
+    +'</tbody></table>';
 
   area.textContent='';
   area.insertAdjacentHTML('beforeend',
     '<div class="detail-panel">'
-    +'<div class="detail-header"><h3>Run #'+d.run_index+' Detail</h3><span class="mono" style="color:var(--text-dim)">'+esc(sc.asset||'')+' | '+esc(prov.data_file_path||'')+'</span></div>'
+    +'<div class="detail-header"><h3>Run #'+d.run_index+' -- '+esc(sc.asset||'')+' '+esc(sc.name||'')+'</h3></div>'
     +'<div class="detail-body">'
+
+    +'<h4 style="font-size:.75rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px">Results</h4>'
     +'<div class="metrics-grid">'+metricsHTML+'</div>'
-    +'<div class="signal-list"><h4>Entry Signals</h4>'+entryHTML+'</div>'
-    +'<div class="signal-list" style="margin-top:8px"><h4>Exit Signals</h4>'+exitHTML+'</div>'
-    +'<div style="margin-top:12px;font-size:.75rem;color:var(--text-dim);font-family:monospace">'+esc(ecHTML)+'</div>'
-    +'<div style="margin-top:8px;font-size:.7rem;color:var(--text-dim)">Provenance: seed='+esc(String(prov.rng_seed||''))+' code='+esc(prov.code_version||'')+' hash='+esc(String(prov.data_file_hash||'').substring(0,20))+'...</div>'
+
+    +'<h4 style="font-size:.75rem;color:var(--text-dim);text-transform:uppercase;margin:16px 0 8px">Entry Signals ('+entry.length+')</h4>'
+    +entryHTML
+
+    +'<h4 style="font-size:.75rem;color:var(--text-dim);text-transform:uppercase;margin:16px 0 8px">Exit Signals ('+exit_sigs.length+')</h4>'
+    +exitHTML
+
+    +'<details style="margin-top:16px"><summary style="cursor:pointer;font-size:.75rem;color:var(--text-dim);text-transform:uppercase;font-weight:600">Execution Config ('+ecEntries.length+' params)</summary>'
+    +'<div style="margin-top:8px">'+ecTableHTML+'</div></details>'
+
+    +'<details style="margin-top:12px"><summary style="cursor:pointer;font-size:.75rem;color:var(--text-dim);text-transform:uppercase;font-weight:600">Provenance</summary>'
+    +'<div style="margin-top:8px">'+provHTML+'</div></details>'
+
     +'</div></div>'
   );
 }

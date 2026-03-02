@@ -158,7 +158,7 @@ var COLUMNS=[
   {key:'timeframe',label:'Timeframe'},
   {key:'total_trades',label:'Trades'},
   {key:'win_rate',label:'Win Rate',fmt:function(v){return fmt(v,1)+'%';}},
-  {key:'total_return',label:'Return',fmt:function(v){return fmt(v,2)+'%';}},
+  {key:'_return',label:'Return',fmt:function(v){return fmt(v,2)+'%';},compute:function(r){var s=r.starting_balance_result||r.ending_balance-(r.net_pnl||0);return s>0?((r.ending_balance-s)/s)*100:0;}},
   {key:'sharpe_ratio',label:'Sharpe',fmt:function(v){return fmt(v,2);}},
   {key:'sortino_ratio',label:'Sortino',fmt:function(v){return fmt(v,2);}},
   {key:'max_drawdown',label:'Max Drawdown',fmt:function(v){return fmt(v,2)+'%';}},
@@ -199,10 +199,10 @@ function renderResults(){
     body.insertAdjacentHTML('beforeend',expState.results.map(function(row){
       var sel=expState.detail&&expState.detail.run_index===row.run_index?'selected':'';
       return '<tr class="'+sel+'" data-ridx="'+row.run_index+'">'+COLUMNS.map(function(c){
-        var val=row[c.key];
+        var val=c.compute?c.compute(row):row[c.key];
         var display=c.fmt?c.fmt(val):(val==null?'-':esc(String(val)));
         var cls='';
-        if(c.key==='net_pnl'||c.key==='total_return')cls=val>0?'positive':val<0?'negative':'';
+        if(c.key==='net_pnl'||c.key==='_return')cls=val>0?'positive':val<0?'negative':'';
         if(c.key==='sharpe_ratio'||c.key==='sortino_ratio'||c.key==='calmar_ratio')cls='mono';
         return '<td class="'+cls+'">'+display+'</td>';
       }).join('')+'</tr>';
@@ -266,7 +266,7 @@ function renderDetail(){
   var metricsHTML=[
     {label:'Sharpe Ratio',val:fmt(m.sharpe_ratio,2)},
     {label:'Sortino Ratio',val:fmt(m.sortino_ratio,2)},
-    {label:'Total Return',val:fmt(m.total_return,2)+'%'},
+    {label:'Total Return',val:(function(){var s=m.ending_balance-(m.net_pnl||0);return s>0?fmt(((m.ending_balance-s)/s)*100,2)+'%':'0%';})()},
     {label:'Max Drawdown',val:fmt(m.max_drawdown,2)+'%'},
     {label:'Calmar Ratio',val:fmt(m.calmar_ratio,2)},
     {label:'Total Trades',val:m.total_trades||0},

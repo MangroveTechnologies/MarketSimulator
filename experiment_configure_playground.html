@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experiment Framework - Configure View Playground</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242734;
+    --border: #2e3240;
+    --text: #e2e4e9;
+    --text-dim: #8b8fa3;
+    --accent: #22d3a7;
+    --accent-dim: #1a9e7e;
+    --danger: #ef4444;
+    --trigger: #6366f1;
+    --filter: #f59e0b;
+    --sweep-on: #22d3a7;
+    --sweep-off: #4b5060;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+  .presets { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .preset-btn {
+    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+    font-size: 0.8rem; transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .preset-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 12px; overflow: hidden;
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; cursor: pointer; user-select: none; transition: background 0.15s;
+  }
+  .section-header:hover { background: var(--surface2); }
+  .section-title { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .section-badge {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+    background: var(--accent-dim); color: var(--bg); font-weight: 600;
+  }
+  .chevron { transition: transform 0.2s; font-size: 0.8rem; color: var(--text-dim); }
+  .section.collapsed .chevron { transform: rotate(-90deg); }
+  .section.collapsed .section-body { display: none; }
+  .section-body { padding: 0 16px 16px; }
+  input[type="text"], input[type="number"], textarea, select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 6px;
+    font-size: 0.85rem; width: 100%; font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 60px; }
+  label { font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px; }
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .data-table th {
+    text-align: left; padding: 8px; color: var(--text-dim);
+    border-bottom: 1px solid var(--border); cursor: pointer; user-select: none;
+    font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .data-table th:hover { color: var(--accent); }
+  .data-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+  .search-input {
+    margin-bottom: 12px; width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;
+  }
+  .signal-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .signal-panel {
+    border: 1px solid var(--border); border-radius: 6px; max-height: 400px; overflow-y: auto;
+  }
+  .signal-panel-title {
+    padding: 8px 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-dim); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--surface);
+  }
+  .signal-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border);
+  }
+  .signal-item:hover { background: var(--surface2); }
+  .signal-type-badge {
+    font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; text-transform: uppercase;
+  }
+  .badge-trigger { background: var(--trigger); color: white; }
+  .badge-filter { background: var(--filter); color: var(--bg); }
+  .signal-add-btn, .signal-remove-btn {
+    padding: 2px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 600;
+  }
+  .signal-add-btn { background: var(--accent); color: var(--bg); }
+  .signal-remove-btn { background: var(--danger); color: white; }
+  .param-grid {
+    background: var(--bg); border-radius: 6px; padding: 12px; margin-top: 8px; border: 1px solid var(--border);
+  }
+  .param-row {
+    display: grid; grid-template-columns: 120px 50px 1fr; gap: 8px; align-items: center;
+    margin-bottom: 6px; font-size: 0.8rem;
+  }
+  .param-name { font-weight: 500; }
+  .param-type { color: var(--text-dim); font-size: 0.7rem; font-family: monospace; }
+  .param-controls { display: flex; gap: 4px; align-items: center; }
+  .param-controls input[type="number"] { width: 65px; padding: 4px 6px; font-size: 0.8rem; }
+  .param-controls label { margin-bottom: 0; font-size: 0.65rem; }
+  .param-range-hint { font-size: 0.65rem; color: var(--text-dim); margin-left: 4px; }
+  .exec-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .exec-table th {
+    text-align: left; padding: 8px; color: var(--text-dim); border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 0.75rem; text-transform: uppercase;
+  }
+  .exec-table td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .sweep-toggle {
+    width: 40px; height: 22px; border-radius: 11px; border: none;
+    cursor: pointer; position: relative; transition: background 0.2s;
+  }
+  .sweep-toggle-on { background: var(--sweep-on); }
+  .sweep-toggle-off { background: var(--sweep-off); }
+  .sweep-knob {
+    width: 18px; height: 18px; border-radius: 50%; background: white;
+    position: absolute; top: 2px; transition: left 0.2s;
+  }
+  .sweep-knob-on { left: 20px; }
+  .sweep-knob-off { left: 2px; }
+  .mode-options { display: flex; gap: 16px; margin-bottom: 12px; }
+  .mode-option {
+    padding: 12px 20px; border-radius: 8px; border: 2px solid var(--border);
+    cursor: pointer; flex: 1; transition: all 0.15s;
+  }
+  .mode-option.active { border-color: var(--accent); background: rgba(34,211,167,0.08); }
+  .mode-option h4 { font-size: 0.9rem; margin-bottom: 4px; }
+  .mode-option p { font-size: 0.75rem; color: var(--text-dim); }
+  .run-count { font-size: 1.5rem; font-weight: 700; color: var(--accent); font-family: monospace; }
+  .run-label { font-size: 0.8rem; color: var(--text-dim); }
+  .actions { display: flex; gap: 12px; margin-top: 20px; }
+  .btn {
+    padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
+    font-weight: 600; font-size: 0.85rem; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover { background: #2aedb8; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .prompt-section {
+    margin-top: 24px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+  }
+  .prompt-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+  }
+  .prompt-header span { font-size: 0.8rem; color: var(--text-dim); font-weight: 600; text-transform: uppercase; }
+  .copy-btn {
+    padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); cursor: pointer; font-size: 0.75rem;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .prompt-body {
+    padding: 16px; font-family: monospace; font-size: 0.8rem;
+    line-height: 1.6; color: var(--text-dim); max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+// === DATA ===
+const DATASETS=[{asset:'BTC',timeframe:'1d',start_date:'2022-08-01',end_date:'2026-02-15',rows:1298},{asset:'ETH',timeframe:'4h',start_date:'2024-01-01',end_date:'2026-02-01',rows:4392},{asset:'DOGE',timeframe:'5m',start_date:'2021-04-01',end_date:'2021-06-15',rows:21600},{asset:'LINK',timeframe:'30m',start_date:'2025-07-04',end_date:'2026-02-12',rows:10800},{asset:'PAXG',timeframe:'1h',start_date:'2025-01-01',end_date:'2026-02-14',rows:9960},{asset:'SOL',timeframe:'5m',start_date:'2026-02-01',end_date:'2026-02-16',rows:4320}];
+const SIGNALS=[{name:'ema_cross_up',type:'TRIGGER',params:{window_fast:{type:'int',min:5,max:30,default:9},window_slow:{type:'int',min:20,max:100,default:21}},constraints:[['window_fast','<','window_slow']]},{name:'macd_bullish_cross',type:'TRIGGER',params:{window_fast:{type:'int',min:8,max:20,default:12},window_slow:{type:'int',min:20,max:35,default:26},window_sign:{type:'int',min:5,max:15,default:9}},constraints:[['window_fast','<','window_slow']]},{name:'rsi_cross_up',type:'TRIGGER',params:{window:{type:'int',min:7,max:28,default:14},threshold:{type:'float',min:40,max:60,default:50}},constraints:[]},{name:'rsi_oversold',type:'FILTER',params:{window:{type:'int',min:7,max:28,default:14},threshold:{type:'float',min:20,max:40,default:30}},constraints:[]},{name:'adx_strong_trend',type:'FILTER',params:{window:{type:'int',min:7,max:28,default:14},threshold:{type:'float',min:20,max:35,default:25}},constraints:[]},{name:'vwap_above',type:'FILTER',params:{window:{type:'int',min:5,max:30,default:14}},constraints:[]},{name:'cmf_bullish',type:'FILTER',params:{window:{type:'int',min:10,max:30,default:20},threshold:{type:'float',min:0,max:0.1,default:0}},constraints:[]}];
+const EXEC_PARAMS=[{name:'reward_factor',type:'float',default:2.0},{name:'max_risk_per_trade',type:'float',default:0.01},{name:'stop_loss_calculation',type:'str',default:'dynamic_atr'},{name:'atr_period',type:'int',default:14},{name:'atr_volatility_factor',type:'float',default:2.0},{name:'atr_short_weight',type:'float',default:0.7},{name:'atr_long_weight',type:'float',default:0.3},{name:'initial_balance',type:'float',default:10000},{name:'min_balance_threshold',type:'float',default:0.1},{name:'min_trade_amount',type:'float',default:25},{name:'max_open_positions',type:'int',default:1},{name:'max_trades_per_day',type:'int',default:5},{name:'max_units_per_trade',type:'float',default:10000},{name:'max_trade_amount',type:'float',default:10000000},{name:'volatility_window',type:'int',default:24},{name:'target_volatility',type:'float',default:0.02},{name:'volatility_mode',type:'str',default:'stddev'},{name:'enable_volatility_adjustment',type:'bool',default:false},{name:'max_hold_time_hours',type:'int',default:null},{name:'cooldown_bars',type:'int',default:2},{name:'daily_momentum_limit',type:'float',default:3},{name:'weekly_momentum_limit',type:'float',default:3},{name:'max_hold_bars',type:'int',default:100},{name:'exit_on_loss_after_bars',type:'int',default:50},{name:'exit_on_profit_after_bars',type:'int',default:100},{name:'profit_threshold_pct',type:'float',default:0.04},{name:'slippage_pct',type:'float',default:0.0075},{name:'fee_pct',type:'float',default:0.0085}];
+
+// === STATE ===
+const state={name:'v2_exec_sweep',desc:'',selectedDS:new Set(),entrySignals:[],exitSignals:[],execSweeps:{},mode:'grid',nRandom:50000,workers:2,seed:42,dsSearch:'',sigSearch:'',sigTypeFilter:null,dsSort:{col:'asset',asc:true}};
+EXEC_PARAMS.forEach(p=>{state.execSweeps[p.name]={enabled:false,min:p.default,max:p.default,step:p.type==='float'?0.5:1}});
+
+// === HELPERS ===
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.textContent;}
+function countCombos(sweeps,sigDef){let t=1;for(const[pn,sw]of Object.entries(sweeps||{})){const mn=sw.min??sigDef.params[pn]?.default??0,mx=sw.max??mn,st=sw.step??1;if(st<=0||mn>mx)continue;t*=Math.floor((mx-mn)/st)+1;}return t;}
+function computeRuns(){const nDS=state.selectedDS.size;if(!nDS)return 0;const trigs=state.entrySignals.filter(s=>SIGNALS.find(x=>x.name===s.name)?.type==='TRIGGER');const filts=state.entrySignals.filter(s=>SIGNALS.find(x=>x.name===s.name)?.type==='FILTER');if(!trigs.length||!filts.length)return 0;let entry=0;trigs.forEach(t=>{const td=SIGNALS.find(x=>x.name===t.name);filts.forEach(f=>{const fd=SIGNALS.find(x=>x.name===f.name);entry+=countCombos(t.sweeps,td)*countCombos(f.sweeps,fd);});});let exit=1;if(state.exitSignals.length){exit=0;state.exitSignals.forEach(s=>{exit+=countCombos(s.sweeps,SIGNALS.find(x=>x.name===s.name));});}let exec=1;Object.entries(state.execSweeps).forEach(([n,sw])=>{if(!sw.enabled)return;const p=EXEC_PARAMS.find(x=>x.name===n);if(p.type==='bool'){exec*=2;return;}if(p.type==='str')return;const st=sw.step||1;if(st>0&&sw.max>=sw.min)exec*=Math.floor((sw.max-sw.min)/st)+1;});const total=nDS*entry*exit*exec;return state.mode==='random'?Math.min(total,state.nRandom*nDS):total;}
+
+// === RENDER ===
+function render(){const app=document.getElementById('app');const runs=computeRuns();
+// Build dataset rows
+let dsList=[...DATASETS];if(state.dsSearch)dsList=dsList.filter(d=>d.asset.toLowerCase().includes(state.dsSearch)||d.timeframe.includes(state.dsSearch));const{col,asc}=state.dsSort;dsList.sort((a,b)=>{let va=a[col],vb=b[col];return typeof va==='string'?(asc?va.localeCompare(vb):vb.localeCompare(va)):(asc?va-vb:vb-va);});
+const dsRows=dsList.map(d=>{const k=d.asset+'_'+d.timeframe;return`<tr><td><input type="checkbox" ${state.selectedDS.has(k)?'checked':''} data-ds="${esc(k)}"></td><td><strong>${esc(d.asset)}</strong></td><td>${esc(d.timeframe)}</td><td>${esc(d.start_date)}</td><td>${esc(d.end_date)}</td><td>${d.rows.toLocaleString()}</td></tr>`;}).join('');
+// Build available/selected signals for entry
+const selNames=new Set(state.entrySignals.map(s=>s.name));let avail=SIGNALS.filter(s=>!selNames.has(s.name));if(state.sigTypeFilter)avail=avail.filter(s=>s.type===state.sigTypeFilter);if(state.sigSearch)avail=avail.filter(s=>s.name.includes(state.sigSearch));
+const availHtml=avail.map(s=>`<div class="signal-item" data-add-entry="${esc(s.name)}"><div><span class="signal-type-badge badge-${s.type.toLowerCase()}">${esc(s.type)}</span> ${esc(s.name)}</div><button class="signal-add-btn">+ Add</button></div>`).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:0.8rem">No signals</div>';
+const selHtml=state.entrySignals.map(s=>{const sig=SIGNALS.find(x=>x.name===s.name);let pg='';if(sig&&sig.params){pg='<div class="param-grid">'+Object.entries(sig.params).map(([pn,pd])=>{const sw=s.sweeps?.[pn]||{};const mn=sw.min??pd.default,mx=sw.max??pd.default,st=sw.step??(pd.type==='float'?0.01:1);return`<div class="param-row"><span class="param-name">${esc(pn)}</span><span class="param-type">${esc(pd.type)}</span><div class="param-controls"><label>min</label><input type="number" value="${mn}" step="${pd.type==='float'?'0.01':'1'}" data-sig="${esc(s.name)}" data-param="${esc(pn)}" data-field="min"><label>max</label><input type="number" value="${mx}" step="${pd.type==='float'?'0.01':'1'}" data-sig="${esc(s.name)}" data-param="${esc(pn)}" data-field="max"><label>step</label><input type="number" value="${st}" step="${pd.type==='float'?'0.01':'1'}" data-sig="${esc(s.name)}" data-param="${esc(pn)}" data-field="step"><span class="param-range-hint">[${pd.min}-${pd.max}]</span></div></div>`;}).join('')+'</div>';}
+return`<div class="signal-item" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:center"><div><span class="signal-type-badge badge-${sig.type.toLowerCase()}">${esc(sig.type)}</span> ${esc(s.name)}</div><button class="signal-remove-btn" data-rm-entry="${esc(s.name)}">Remove</button></div>${pg}</div>`;}).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:0.8rem">No signals selected</div>';
+// Exec config table
+let sweptN=0;const execRows=EXEC_PARAMS.map(p=>{const sw=state.execSweeps[p.name];const on=sw?.enabled;if(on)sweptN++;let sweepCtrl='';if(on){if(p.type==='bool')sweepCtrl='<div style="margin-top:6px;font-size:0.75rem;color:var(--text-dim)">Values: true, false</div>';else if(p.type==='str')sweepCtrl='';else sweepCtrl=`<div class="param-controls" style="margin-top:6px"><label>min</label><input type="number" value="${sw.min}" style="width:75px;padding:4px 6px;font-size:0.8rem" data-exec="${esc(p.name)}" data-field="min"><label>max</label><input type="number" value="${sw.max}" style="width:75px;padding:4px 6px;font-size:0.8rem" data-exec="${esc(p.name)}" data-field="max"><label>step</label><input type="number" value="${sw.step}" style="width:75px;padding:4px 6px;font-size:0.8rem" data-exec="${esc(p.name)}" data-field="step"></div>`;}
+return`<tr><td style="font-family:monospace;font-size:0.8rem">${esc(p.name)}</td><td style="color:var(--text-dim);font-size:0.75rem">${esc(p.type)}</td><td style="font-family:monospace;font-size:0.8rem">${p.default===null?'null':p.default}</td><td><button class="sweep-toggle ${on?'sweep-toggle-on':'sweep-toggle-off'}" data-sweep="${esc(p.name)}"><span class="sweep-knob ${on?'sweep-knob-on':'sweep-knob-off'}"></span></button>${sweepCtrl}</td></tr>`;}).join('');
+// Prompt
+const parts=[];parts.push('Experiment: '+state.name);if(state.selectedDS.size)parts.push('Datasets: '+[...state.selectedDS].join(', '));const et=state.entrySignals.filter(s=>SIGNALS.find(x=>x.name===s.name)?.type==='TRIGGER').map(s=>s.name);const ef=state.entrySignals.filter(s=>SIGNALS.find(x=>x.name===s.name)?.type==='FILTER').map(s=>s.name);if(et.length)parts.push('Entry triggers: '+et.join(', '));if(ef.length)parts.push('Entry filters: '+ef.join(', '));const sw2=Object.entries(state.execSweeps).filter(([,s])=>s.enabled).map(([n,s])=>{const p=EXEC_PARAMS.find(x=>x.name===n);if(p.type==='bool')return n+': [true, false]';return`${n}: [${s.min} to ${s.max} step ${s.step}]`;});if(sw2.length)parts.push('Exec sweeps:\n  '+sw2.join('\n  '));parts.push('Mode: '+state.mode+(state.mode==='random'?' (N='+state.nRandom+')':''));parts.push('Total runs: '+runs.toLocaleString());parts.push('Seed: '+state.seed+'  Workers: '+state.workers+'/dataset');
+
+app.textContent='';
+app.insertAdjacentHTML('beforeend',`
+<h1>Experiment Framework</h1>
+<p class="subtitle">Configure backtest sweep experiments with full parameter control</p>
+<div class="presets"><button class="preset-btn" data-preset="default">Default</button><button class="preset-btn" data-preset="quick">Quick Test</button><button class="preset-btn" data-preset="full_grid">Full Grid</button><button class="preset-btn" data-preset="random_100k">Random 100K</button><button class="preset-btn" data-preset="exec_sweep">Exec Sweep</button></div>
+<div class="section" id="sec-name"><div class="section-header" data-toggle="sec-name"><div class="section-title">Experiment Name</div><span class="chevron">&#9660;</span></div><div class="section-body"><div class="input-row"><div><label>Name</label><input type="text" id="inp-name" value="${esc(state.name)}"></div><div><label>Description</label><input type="text" id="inp-desc" value="${esc(state.desc)}"></div></div></div></div>
+<div class="section" id="sec-ds"><div class="section-header" data-toggle="sec-ds"><div class="section-title">Datasets <span class="section-badge">${state.selectedDS.size} selected</span></div><span class="chevron">&#9660;</span></div><div class="section-body"><input type="text" class="search-input" placeholder="Search datasets..." id="ds-search" value="${esc(state.dsSearch)}"><table class="data-table"><thead><tr><th style="width:30px"><input type="checkbox" id="ds-all"></th><th data-sort-ds="asset">Asset</th><th data-sort-ds="timeframe">Timeframe</th><th data-sort-ds="start_date">Start</th><th data-sort-ds="end_date">End</th><th data-sort-ds="rows">Rows</th></tr></thead><tbody>${dsRows}</tbody></table></div></div>
+<div class="section" id="sec-entry"><div class="section-header" data-toggle="sec-entry"><div class="section-title">Entry Signals <span class="section-badge">${state.entrySignals.length} selected</span></div><span class="chevron">&#9660;</span></div><div class="section-body"><input type="text" class="search-input" placeholder="Search signals..." id="sig-search" value="${esc(state.sigSearch)}"><div style="margin-bottom:8px;display:flex;gap:8px"><button class="preset-btn" style="font-size:0.7rem" data-sigfilter="">All</button><button class="preset-btn" style="font-size:0.7rem;border-color:var(--trigger)" data-sigfilter="TRIGGER">Triggers</button><button class="preset-btn" style="font-size:0.7rem;border-color:var(--filter)" data-sigfilter="FILTER">Filters</button></div><div class="signal-panels"><div class="signal-panel"><div class="signal-panel-title">Available</div>${availHtml}</div><div class="signal-panel"><div class="signal-panel-title">Selected</div>${selHtml}</div></div></div></div>
+<div class="section collapsed" id="sec-exit"><div class="section-header" data-toggle="sec-exit"><div class="section-title">Exit Signals <span class="section-badge">${state.exitSignals.length} selected</span></div><span class="chevron">&#9660;</span></div><div class="section-body"><div style="padding:12px;color:var(--text-dim);font-size:0.8rem">Same structure as entry signals (not wired in this prototype)</div></div></div>
+<div class="section" id="sec-exec"><div class="section-header" data-toggle="sec-exec"><div class="section-title">Execution Config <span class="section-badge">${sweptN} swept</span></div><span class="chevron">&#9660;</span></div><div class="section-body"><table class="exec-table"><thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Sweep</th></tr></thead><tbody>${execRows}</tbody></table></div></div>
+<div class="section" id="sec-mode"><div class="section-header" data-toggle="sec-mode"><div class="section-title">Search Mode &amp; Budget</div><span class="chevron">&#9660;</span></div><div class="section-body"><div class="mode-options"><div class="mode-option ${state.mode==='grid'?'active':''}" data-mode="grid"><h4>Grid Search</h4><p>All valid combinations. Auto-calculated.</p></div><div class="mode-option ${state.mode==='random'?'active':''}" data-mode="random"><h4>Random Search</h4><p>Sample N random combinations.</p></div></div>${state.mode==='random'?'<div style="margin-bottom:12px"><label>Runs per dataset (N)</label><input type="number" id="inp-nrandom" value="'+state.nRandom+'" min="1" style="width:150px"></div>':''}<div style="display:flex;gap:24px;align-items:baseline"><div><span class="run-count">${runs.toLocaleString()}</span><br><span class="run-label">total runs</span></div><div><label>Workers/dataset</label><input type="number" id="inp-workers" value="${state.workers}" min="1" max="24" style="width:80px"></div><div><label>Seed</label><input type="number" id="inp-seed" value="${state.seed}" style="width:80px"></div></div></div></div>
+<div class="section collapsed" id="sec-prov"><div class="section-header" data-toggle="sec-prov"><div class="section-title">Provenance</div><span class="chevron">&#9660;</span></div><div class="section-body"><div class="input-row"><div><label>Code Version</label><input type="text" value="auto-detect"></div><div><label>Notes</label><textarea placeholder="Experiment notes..."></textarea></div></div></div></div>
+<div class="actions"><button class="btn btn-secondary" id="btn-validate">Validate</button><button class="btn btn-primary" id="btn-launch">Launch Experiment</button><button class="btn btn-secondary" id="btn-template">Save as Template</button></div>
+<div class="prompt-section"><div class="prompt-header"><span>Experiment Summary</span><button class="copy-btn" id="btn-copy">Copy</button></div><div class="prompt-body" id="prompt-out">${esc(parts.join('\n'))}</div></div>
+`);bindEvents();}
+
+// === EVENTS (delegation) ===
+function bindEvents(){
+document.querySelectorAll('[data-toggle]').forEach(el=>el.addEventListener('click',()=>{document.getElementById(el.dataset.toggle).classList.toggle('collapsed');}));
+document.querySelectorAll('[data-ds]').forEach(el=>el.addEventListener('change',()=>{const k=el.dataset.ds;if(state.selectedDS.has(k))state.selectedDS.delete(k);else state.selectedDS.add(k);render();}));
+document.querySelectorAll('[data-sort-ds]').forEach(el=>el.addEventListener('click',()=>{const c=el.dataset.sortDs;if(state.dsSort.col===c)state.dsSort.asc=!state.dsSort.asc;else{state.dsSort.col=c;state.dsSort.asc=true;}render();}));
+const dsAll=document.getElementById('ds-all');if(dsAll)dsAll.addEventListener('change',()=>{DATASETS.forEach(d=>{const k=d.asset+'_'+d.timeframe;if(dsAll.checked)state.selectedDS.add(k);else state.selectedDS.delete(k);});render();});
+const dsS=document.getElementById('ds-search');if(dsS)dsS.addEventListener('input',()=>{state.dsSearch=dsS.value.toLowerCase();render();});
+const sigS=document.getElementById('sig-search');if(sigS)sigS.addEventListener('input',()=>{state.sigSearch=sigS.value.toLowerCase();render();});
+document.querySelectorAll('[data-sigfilter]').forEach(el=>el.addEventListener('click',()=>{state.sigTypeFilter=el.dataset.sigfilter||null;render();}));
+document.querySelectorAll('[data-add-entry]').forEach(el=>el.addEventListener('click',()=>{const n=el.dataset.addEntry;const sig=SIGNALS.find(s=>s.name===n);const sweeps={};Object.entries(sig.params).forEach(([pn,pd])=>{sweeps[pn]={min:pd.default,max:pd.default,step:pd.type==='float'?0.01:1};});state.entrySignals.push({name:n,sweeps});render();}));
+document.querySelectorAll('[data-rm-entry]').forEach(el=>el.addEventListener('click',()=>{state.entrySignals=state.entrySignals.filter(s=>s.name!==el.dataset.rmEntry);render();}));
+document.querySelectorAll('[data-sig][data-param][data-field]').forEach(el=>el.addEventListener('change',()=>{const s=state.entrySignals.find(x=>x.name===el.dataset.sig);if(s){if(!s.sweeps)s.sweeps={};if(!s.sweeps[el.dataset.param])s.sweeps[el.dataset.param]={};s.sweeps[el.dataset.param][el.dataset.field]=parseFloat(el.value);}render();}));
+document.querySelectorAll('[data-sweep]').forEach(el=>el.addEventListener('click',()=>{const n=el.dataset.sweep;state.execSweeps[n].enabled=!state.execSweeps[n].enabled;const p=EXEC_PARAMS.find(x=>x.name===n);if(state.execSweeps[n].enabled&&p){state.execSweeps[n].min=p.default;state.execSweeps[n].max=p.default;state.execSweeps[n].step=p.type==='float'?0.5:1;}render();}));
+document.querySelectorAll('[data-exec][data-field]').forEach(el=>el.addEventListener('change',()=>{state.execSweeps[el.dataset.exec][el.dataset.field]=parseFloat(el.value);render();}));
+document.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;render();}));
+const nR=document.getElementById('inp-nrandom');if(nR)nR.addEventListener('input',()=>{state.nRandom=parseInt(nR.value)||50000;render();});
+const wk=document.getElementById('inp-workers');if(wk)wk.addEventListener('input',()=>{state.workers=parseInt(wk.value)||2;render();});
+const sd=document.getElementById('inp-seed');if(sd)sd.addEventListener('input',()=>{state.seed=parseInt(sd.value)||42;render();});
+const nm=document.getElementById('inp-name');if(nm)nm.addEventListener('input',()=>{state.name=nm.value;render();});
+const ds2=document.getElementById('inp-desc');if(ds2)ds2.addEventListener('input',()=>{state.desc=ds2.value;render();});
+document.querySelectorAll('[data-preset]').forEach(el=>el.addEventListener('click',()=>applyPreset(el.dataset.preset)));
+document.getElementById('btn-validate')?.addEventListener('click',()=>alert('Validation: '+computeRuns()+' runs'));
+document.getElementById('btn-launch')?.addEventListener('click',()=>alert('Launched!'));
+document.getElementById('btn-template')?.addEventListener('click',()=>alert('Saved as template'));
+document.getElementById('btn-copy')?.addEventListener('click',()=>{const t=document.getElementById('prompt-out').textContent;navigator.clipboard.writeText(t);const b=document.getElementById('btn-copy');b.textContent='Copied!';setTimeout(()=>{b.textContent='Copy'},1500);});
+}
+
+function applyPreset(name){state.selectedDS.clear();state.entrySignals=[];state.exitSignals=[];Object.keys(state.execSweeps).forEach(k=>{state.execSweeps[k].enabled=false;});
+if(name==='default'){state.selectedDS.add('BTC_1d');state.entrySignals=[{name:'ema_cross_up',sweeps:{window_fast:{min:9,max:9,step:1},window_slow:{min:21,max:21,step:1}}},{name:'rsi_oversold',sweeps:{window:{min:14,max:14,step:1},threshold:{min:30,max:30,step:1}}}];state.name='v2_exec_sweep';state.mode='grid';}
+else if(name==='quick'){state.selectedDS.add('BTC_1d');state.entrySignals=[{name:'ema_cross_up',sweeps:{window_fast:{min:9,max:9,step:1},window_slow:{min:21,max:21,step:1}}},{name:'rsi_oversold',sweeps:{window:{min:14,max:14,step:1},threshold:{min:30,max:30,step:1}}}];state.name='quick_test';state.mode='random';state.nRandom=100;}
+else if(name==='full_grid'){DATASETS.forEach(d=>state.selectedDS.add(d.asset+'_'+d.timeframe));SIGNALS.forEach(s=>{const sw={};Object.entries(s.params).forEach(([pn,pd])=>{sw[pn]={min:pd.default,max:pd.default,step:pd.type==='float'?0.01:1};});state.entrySignals.push({name:s.name,sweeps:sw});});state.name='full_grid';state.mode='grid';}
+else if(name==='random_100k'){DATASETS.forEach(d=>state.selectedDS.add(d.asset+'_'+d.timeframe));SIGNALS.forEach(s=>{const sw={};Object.entries(s.params).forEach(([pn,pd])=>{sw[pn]={min:pd.min,max:pd.max,step:pd.type==='float'?1:1};});state.entrySignals.push({name:s.name,sweeps:sw});});state.name='random_100k';state.mode='random';state.nRandom=100000;}
+else if(name==='exec_sweep'){state.selectedDS.add('BTC_1d');state.selectedDS.add('ETH_4h');state.entrySignals=[{name:'ema_cross_up',sweeps:{window_fast:{min:5,max:20,step:5},window_slow:{min:20,max:60,step:10}}},{name:'rsi_oversold',sweeps:{window:{min:7,max:21,step:7},threshold:{min:25,max:35,step:5}}}];state.execSweeps.reward_factor={enabled:true,min:1.5,max:5,step:0.5};state.execSweeps.cooldown_bars={enabled:true,min:0,max:5,step:1};state.execSweeps.max_risk_per_trade={enabled:true,min:0.01,max:0.05,step:0.01};state.name='exec_config_sweep';state.mode='grid';}
+render();}
+
+// INIT
+applyPreset('default');
+</script>
+</body>
+</html>

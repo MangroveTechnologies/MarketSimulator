@@ -1,0 +1,144 @@
+{
+  "experiment_id": "exp_20260302T014432004042Z",
+  "name": "experiment_001",
+  "description": "",
+  "seed": 42,
+  "search_mode": "random",
+  "n_random": 10,
+  "random_signals": {
+    "n_entry_triggers": 1,
+    "min_entry_filters": 1,
+    "max_entry_filters": 1,
+    "min_exit_triggers": 0,
+    "max_exit_triggers": 0,
+    "min_exit_filters": 0,
+    "max_exit_filters": 0,
+    "n_param_draws": 1
+  },
+  "grid_signals": {
+    "n_param_combos": 3
+  },
+  "datasets": [
+    {
+      "asset": "BTC",
+      "timeframe": "1d",
+      "file": "btc_2022-08-01_2026-02-15_1d.csv",
+      "hash": "sha256:95b000ee39e8380890450c7e7628fffcd625c0278e5ef4c5654a342fc7d4bf1f",
+      "rows": 1294,
+      "start_date": "2022-08-01",
+      "end_date": "2026-02-15"
+    },
+    {
+      "asset": "DOGE",
+      "timeframe": "5m",
+      "file": "doge_2021-04-01_2021-06-15_5m.csv",
+      "hash": "sha256:30cc2a4fb90a61a71abd750b7c2f15072dc39fd371936a53e7187de806ac711f",
+      "rows": 21327,
+      "start_date": "2021-04-01",
+      "end_date": "2021-06-15"
+    },
+    {
+      "asset": "ETH",
+      "timeframe": "4h",
+      "file": "eth_2024-01-01_2026-02-01_4h.csv",
+      "hash": "sha256:c8c5a3f64ccdd5fc1b79b93ee84c632d5d0c7ebfef2b642bf0dbcc72cc61a4ce",
+      "rows": 4572,
+      "start_date": "2024-01-01",
+      "end_date": "2026-02-01"
+    },
+    {
+      "asset": "LINK",
+      "timeframe": "30m",
+      "file": "link_2025-07-04_2026-02-12_30m.csv",
+      "hash": "sha256:33139a6a5f5fe9688f15f8789d22ca32e06710c2466d378199f848c9edad55ac",
+      "rows": 10704,
+      "start_date": "2025-07-04",
+      "end_date": "2026-02-12"
+    },
+    {
+      "asset": "PAXG",
+      "timeframe": "1h",
+      "file": "paxg_2025-01-01_2026-02-14_1h.csv",
+      "hash": "sha256:3aee468de2dfc84373ef3806f705508ec031b367c9e10171cccb37a28d8d57e9",
+      "rows": 9805,
+      "start_date": "2025-01-01",
+      "end_date": "2026-02-14"
+    },
+    {
+      "asset": "XRP",
+      "timeframe": "15m",
+      "file": "xrp_2025-12-20_2026-02-16_15m.csv",
+      "hash": "sha256:dacdc67eb4087caf0535d2ad22774118a49064999ea2c619ea2b11573ebf81e5",
+      "rows": 5568,
+      "start_date": "2025-12-20",
+      "end_date": "2026-02-16"
+    }
+  ],
+  "entry_signals": {
+    "triggers": [],
+    "filters": [],
+    "min_filters": 1,
+    "max_filters": 1,
+    "constraints": []
+  },
+  "exit_signals": {
+    "triggers": [],
+    "filters": [],
+    "min_filters": 1,
+    "max_filters": 1,
+    "constraints": []
+  },
+  "execution_config": {
+    "base": {
+      "max_risk_per_trade": 0.01,
+      "reward_factor": 2,
+      "stop_loss_calculation": "dynamic_atr",
+      "atr_period": 14,
+      "atr_volatility_factor": 2,
+      "atr_short_weight": 0.7,
+      "atr_long_weight": 0.3,
+      "initial_balance": 10000,
+      "min_balance_threshold": 0.1,
+      "min_trade_amount": 25,
+      "max_open_positions": 10,
+      "max_trades_per_day": 50,
+      "max_units_per_trade": 10000,
+      "max_trade_amount": 10000000,
+      "volatility_window": 24,
+      "target_volatility": 0.02,
+      "volatility_mode": "stddev",
+      "enable_volatility_adjustment": false,
+      "max_hold_time_hours": null,
+      "cooldown_bars": 24,
+      "daily_momentum_limit": 3,
+      "weekly_momentum_limit": 3,
+      "max_hold_bars": 1000,
+      "exit_on_loss_after_bars": 1000,
+      "exit_on_profit_after_bars": 1000,
+      "profit_threshold_pct": 0.05,
+      "lookback_days": 365,
+      "slippage_pct": 0.0075,
+      "fee_pct": 0.0085
+    },
+    "sweep_axes": [
+      {
+        "param": "max_risk_per_trade",
+        "min": 0.01,
+        "max": 0.02,
+        "step": 0.005
+      },
+      {
+        "param": "reward_factor",
+        "min": 2,
+        "max": 3,
+        "step": 0.5
+      }
+    ]
+  },
+  "workers_per_dataset": 2,
+  "code_version": "",
+  "notes": "",
+  "status": "completed",
+  "created_at": "2026-03-02T01:44:32.004076+00:00",
+  "total_runs": 60
+}

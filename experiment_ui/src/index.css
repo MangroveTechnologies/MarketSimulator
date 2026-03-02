@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap');
+
+@theme {
+  /* Mangrove brand palette */
+  --color-mg-black: #0C0D10;
+  --color-mg-surface: #16171D;
+  --color-mg-elevated: #1E2028;
+  --color-mg-hover: #252730;
+  --color-mg-border: #2E3140;
+  --color-mg-blue: #42A7C6;
+  --color-mg-blue-light: #74C3D5;
+  --color-mg-orange: #FF9E18;
+  --color-mg-red: #FF4713;
+  --color-mg-text: #E8EAF0;
+  --color-mg-dim: #8B8FA3;
+  --color-mg-muted: #5C6070;
+
+  /* Light mode overrides */
+  --color-mg-light-bg: #F5F6F8;
+  --color-mg-light-surface: #FFFFFF;
+  --color-mg-light-elevated: #F0F1F3;
+  --color-mg-light-hover: #E8E9EB;
+  --color-mg-light-border: #D1D5DB;
+  --color-mg-light-text: #1F2937;
+  --color-mg-light-dim: #6B7280;
+
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-mg-black);
+  color: var(--color-mg-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="light"] body {
+  background: var(--color-mg-light-bg);
+  color: var(--color-mg-light-text);
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-mg-black); }
+::-webkit-scrollbar-thumb { background: var(--color-mg-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-mg-muted); }

@@ -38,22 +38,42 @@ def create_app() -> FastAPI:
     app.include_router(templates_router, prefix="/api/v1")
     app.include_router(exec_config_router, prefix="/api/v1")
 
-    # Serve HTML pages
+    # Serve frontend
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    react_dist = os.path.join(base_dir, "experiment_ui_dist")
+    html_fallback = os.path.join(base_dir, "dashboard.html")
 
-    @app.get("/")
-    async def serve_dashboard():
+    # Serve React built assets if available
+    if os.path.isdir(react_dist):
+        app.mount("/assets", StaticFiles(directory=os.path.join(react_dist, "assets")), name="assets")
+
+    @app.get("/old")
+    async def serve_old_dashboard():
+        """Legacy HTML dashboard."""
         path = os.path.join(base_dir, "dashboard.html")
         if os.path.exists(path):
             return FileResponse(path, media_type="text/html")
         return {"message": "dashboard.html not found"}
 
-    @app.get("/explore")
-    async def serve_explore():
+    @app.get("/old/explore")
+    async def serve_old_explore():
+        """Legacy HTML explore view."""
         path = os.path.join(base_dir, "explore.html")
         if os.path.exists(path):
             return FileResponse(path, media_type="text/html")
         return {"message": "explore.html not found"}
+
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        """Serve React SPA -- all routes fall through to index.html."""
+        if os.path.isdir(react_dist):
+            index = os.path.join(react_dist, "index.html")
+            if os.path.exists(index):
+                return FileResponse(index, media_type="text/html")
+        # Fallback to old HTML dashboard
+        if os.path.exists(html_fallback):
+            return FileResponse(html_fallback, media_type="text/html")
+        return {"message": "No frontend found"}
 
     return app
 

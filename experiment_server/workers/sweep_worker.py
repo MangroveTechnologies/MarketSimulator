@@ -153,13 +153,22 @@ def execute_sweep_job(
         except Exception as exc:
             logger.warning("Could not connect to Redis: %s", exc)
 
-    # Load backtest function
+    # Load backtest function and OHLCV data
+    _df_cache: dict[str, Any] = {}  # dataset_key -> DataFrame
+
     if backtest_fn is None:
         _suppress_engine_output()
         sys.path.insert(0, "/app")
+        # Suppress stdout from the backtest engine (print-heavy)
+        _devnull = open(os.devnull, "w")
+
         from MangroveAI.domains.backtesting.services import run_backtest
         from MangroveAI.domains.backtesting.domain_models.requests import BacktestRequest
-        # Will be set up per-run below
+        from MangroveAI.domains.backtesting import data_source as ds_module
+        from MangroveAI.domains.positions.position import Position
+
+        import pandas as pd
+
         _use_mangrove = True
     else:
         _use_mangrove = False
@@ -182,9 +191,73 @@ def execute_sweep_job(
 
         try:
             if _use_mangrove:
-                # TODO: Wire up MangroveAI's run_single_backtest properly
-                # This requires loading OHLCV data and injecting into cache
-                result = {"success": False, "error": "MangroveAI integration pending"}
+                # Load OHLCV data (once per dataset, cached)
+                dk = run.dataset_key
+                if dk not in _df_cache:
+                    ohlcv_dir = os.environ.get(
+                        "EXP_OHLCV_DIR", "/app/MarketSimulator/data/ohlcv",
+                    )
+                    csv_path = os.path.join(ohlcv_dir, run.data_file)
+                    df = pd.read_csv(csv_path)
+                    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+                    df = df[["timestamp", "open", "high", "low", "close", "volume"]].copy()
+                    df.sort_values("timestamp", inplace=True)
+                    df.reset_index(drop=True, inplace=True)
+                    _df_cache[dk] = df
+
+                df_local = _df_cache[dk]
+
+                # Parse dates from the run spec
+                from datetime import datetime as dt
+                start_dt = dt.strptime(run.start_date, "%Y-%m-%d")
+                end_dt = dt.strptime(run.end_date, "%Y-%m-%d")
+
+                # Inject into OHLCV cache
+                asset_symbol = run.asset.upper()
+                cache_key = (
+                    "coinapi", asset_symbol,
+                    run.timeframe.lower(),
+                    start_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    end_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                )
+                ds_module._OHLCV_CACHE[cache_key] = df_local
+
+                # Build BacktestRequest
+                ec = run.exec_config
+                request = BacktestRequest(
+                    initial_balance=float(ec.get("initial_balance", 10000)),
+                    min_balance_threshold=float(ec.get("min_balance_threshold", 0.1)),
+                    min_trade_amount=float(ec.get("min_trade_amount", 25)),
+                    max_open_positions=int(ec.get("max_open_positions", 10)),
+                    max_trades_per_day=int(ec.get("max_trades_per_day", 50)),
+                    max_risk_per_trade=float(ec.get("max_risk_per_trade", 0.01)),
+                    max_units_per_trade=float(ec.get("max_units_per_trade", 10000)),
+                    max_trade_amount=float(ec.get("max_trade_amount", 10000000)),
+                    volatility_window=int(ec.get("volatility_window", 24)),
+                    target_volatility=float(ec.get("target_volatility", 0.02)),
+                    volatility_mode=str(ec.get("volatility_mode", "stddev")),
+                    enable_volatility_adjustment=bool(ec.get("enable_volatility_adjustment", False)),
+                    cooldown_bars=int(ec.get("cooldown_bars", 24)),
+                    daily_momentum_limit=float(ec.get("daily_momentum_limit", 3)),
+                    weekly_momentum_limit=float(ec.get("weekly_momentum_limit", 3)),
+                    asset=f"{asset_symbol}-USDT",
+                    interval=run.timeframe,
+                    start_date=start_dt,
+                    end_date=end_dt,
+                    strategy_json=json.dumps(strategy_config),
+                    execution_config=ec,
+                )
+
+                # Suppress stdout during backtest
+                old_stdout = sys.stdout
+                sys.stdout = _devnull
+                try:
+                    result = run_backtest(request)
+                finally:
+                    sys.stdout = old_stdout
+
+                # Clear position state (engine singleton)
+                Position.positions.clear()
             else:
                 result = backtest_fn(strategy_config, run)
 

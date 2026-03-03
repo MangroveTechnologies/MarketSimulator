@@ -101,9 +101,24 @@ def apply_constraints(
     return valid
 
 
+def _load_trading_defaults() -> dict[str, Any]:
+    """Load and flatten trading_defaults.json into a single dict."""
+    import json as json_mod
+    from experiment_server.config import settings
+    with open(settings.trading_defaults_path) as f:
+        defaults = json_mod.load(f)
+    flat = {}
+    for section in ["risk_management", "position_limits", "volatility_settings",
+                     "trading_rules", "time_based_exits", "backtest_defaults"]:
+        flat.update(defaults.get(section, {}))
+    return flat
+
+
 def generate_exec_config_variants(ec: ExecConfigSweep) -> list[dict[str, Any]]:
     """Generate execution config variants from sweep axes (cross-product)."""
-    base = dict(ec.base)
+    # Start from trading defaults, overlay user-provided base on top.
+    base = _load_trading_defaults()
+    base.update(ec.base)
     if not ec.sweep_axes:
         return [base]
 
@@ -224,10 +239,14 @@ def _load_signals_by_type(metadata_path: str) -> tuple[list[dict], list[dict]]:
     path = metadata_path or settings.signals_metadata_path
     with open(path) as f:
         metadata = json_mod.load(f)
+    # Exclude pattern signals -- they use non-standard params (lookback)
+    # and are not suitable for automated sweep.
     triggers = [{"name": n, **m} for n, m in metadata.items()
-                if m.get("type") == "TRIGGER" and not m.get("disabled")]
+                if m.get("type") == "TRIGGER" and not m.get("disabled")
+                and m.get("category") != "patterns"]
     filters = [{"name": n, **m} for n, m in metadata.items()
-               if m.get("type") == "FILTER" and not m.get("disabled")]
+               if m.get("type") == "FILTER" and not m.get("disabled")
+               and m.get("category") != "patterns"]
     return triggers, filters
 
 
@@ -312,6 +331,9 @@ def _generate_random_plan(
                 ))
 
             # --- Exit signals ---
+            # If an exit trigger is drawn, optionally add filters.
+            # If no exit trigger, skip filters too (engine requires
+            # exactly 1 trigger when any exit signals are present).
             exit_sigs = []
             n_exit_triggers = rng.randint(rc.min_exit_triggers, rc.max_exit_triggers)
             if n_exit_triggers > 0:
@@ -324,17 +346,17 @@ def _generate_random_plan(
                     exit_trig["name"], "TRIGGER", ds.timeframe, ep,
                 ))
 
-            n_exit_filters = rng.randint(rc.min_exit_filters, rc.max_exit_filters)
-            if n_exit_filters > 0:
-                exit_filts = rng.sample(filters, min(n_exit_filters, len(filters)))
-                for ef_meta in exit_filts:
-                    for attempt in range(20):
-                        ep = _random_params_for_signal(ef_meta, rng)
-                        if _passes_signal_constraints(ef_meta, ep):
-                            break
-                    exit_sigs.append(_build_signal_object(
-                        ef_meta["name"], "FILTER", ds.timeframe, ep,
-                    ))
+                n_exit_filters = rng.randint(rc.min_exit_filters, rc.max_exit_filters)
+                if n_exit_filters > 0:
+                    exit_filts = rng.sample(filters, min(n_exit_filters, len(filters)))
+                    for ef_meta in exit_filts:
+                        for attempt in range(20):
+                            ep = _random_params_for_signal(ef_meta, rng)
+                            if _passes_signal_constraints(ef_meta, ep):
+                                break
+                        exit_sigs.append(_build_signal_object(
+                            ef_meta["name"], "FILTER", ds.timeframe, ep,
+                        ))
 
             # --- Exec config ---
             ec = rng.choice(exec_variants)

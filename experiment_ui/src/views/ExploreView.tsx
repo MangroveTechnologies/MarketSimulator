@@ -1,32 +1,40 @@
 import { useState, useEffect, useCallback } from 'react'
-import { listExperiments, queryResults, visualizeResult } from '../api/client'
-import type { ExperimentSummary, ResultRow, VisualizeResponse } from '../types'
+import { useNavigate } from 'react-router-dom'
+import { listExperiments, queryResults } from '../api/client'
+import type { ExperimentSummary, ResultRow, SignalInstance } from '../types'
+import type { SelectedRun } from '../App'
 
-const RESULT_COLUMNS: { key: string; label: string; fmt?: (v: any, row?: ResultRow) => string; sortable?: boolean }[] = [
-  { key: 'run_index', label: 'Run #', sortable: true },
+// ── Column definitions ───────────────────────────────────────────
+
+const COLUMNS: { key: string; label: string; mono?: boolean; sortable?: boolean; fmt?: (v: any, row?: ResultRow) => string }[] = [
+  { key: 'run_index', label: '#', mono: true, sortable: true },
   { key: 'asset', label: 'Asset' },
-  { key: 'timeframe', label: 'Timeframe' },
-  { key: 'start_date', label: 'Start' },
-  { key: 'end_date', label: 'End' },
-  { key: 'num_days', label: 'Days', sortable: true },
-  { key: 'total_trades', label: 'Trades', sortable: true },
-  { key: 'win_rate', label: 'Win Rate', sortable: true, fmt: v => v != null ? `${v.toFixed(1)}%` : '-' },
-  { key: '_return', label: 'Return', sortable: false, fmt: (_v, row) => {
-    if (!row) return '-'
-    const s = row.starting_balance_result || (row.ending_balance - (row.net_pnl || 0))
-    return s > 0 ? `${(((row.ending_balance - s) / s) * 100).toFixed(2)}%` : '0%'
+  { key: 'timeframe', label: 'TF' },
+  { key: 'trigger_name', label: 'Trigger' },
+  { key: '_filters', label: 'Filters', fmt: (_v, row) => {
+    if (!row?.entry_json) return '-'
+    try {
+      const sigs = JSON.parse(row.entry_json)
+      const filters = sigs.filter((s: any) => s.signal_type === 'FILTER').map((s: any) => s.name)
+      return filters.length ? filters.join(', ') : '-'
+    } catch { return '-' }
   }},
-  { key: 'sharpe_ratio', label: 'Sharpe', sortable: true, fmt: v => v != null ? v.toFixed(2) : '-' },
-  { key: 'sortino_ratio', label: 'Sortino', sortable: true, fmt: v => v != null ? v.toFixed(2) : '-' },
-  { key: 'max_drawdown', label: 'Max DD', sortable: true, fmt: v => v != null ? `${v.toFixed(2)}%` : '-' },
-  { key: 'calmar_ratio', label: 'Calmar', sortable: true, fmt: v => v != null ? v.toFixed(2) : '-' },
-  { key: 'net_pnl', label: 'Net PnL', sortable: true, fmt: v => v != null ? `$${v.toFixed(2)}` : '-' },
-  { key: 'starting_balance_result', label: 'Start Bal', fmt: v => v != null ? `$${v.toFixed(0)}` : '-' },
-  { key: 'ending_balance', label: 'End Bal', sortable: true, fmt: v => v != null ? `$${v.toFixed(2)}` : '-' },
+  { key: 'total_trades', label: 'Trades', mono: true, sortable: true },
+  { key: 'win_rate', label: 'Win%', mono: true, sortable: true, fmt: v => v != null ? `${v.toFixed(1)}%` : '-' },
+  { key: 'sharpe_ratio', label: 'Sharpe', mono: true, sortable: true, fmt: v => v != null ? v.toFixed(2) : '-' },
+  { key: 'sortino_ratio', label: 'Sortino', mono: true, sortable: true, fmt: v => v != null ? v.toFixed(2) : '-' },
+  { key: 'calmar_ratio', label: 'Calmar', mono: true, sortable: true, fmt: v => v != null ? v.toFixed(2) : '-' },
+  { key: 'max_drawdown', label: 'Max DD', mono: true, sortable: true, fmt: v => v != null ? `${v.toFixed(2)}%` : '-' },
+  { key: 'max_drawdown_duration', label: 'DD Dur', mono: true, sortable: true, fmt: v => v != null ? `${v}` : '-' },
+  { key: 'starting_balance_result', label: 'Start Bal', mono: true, fmt: v => v != null ? `$${Number(v).toFixed(0)}` : '-' },
+  { key: 'ending_balance', label: 'End Bal', mono: true, sortable: true, fmt: v => v != null ? `$${Number(v).toFixed(0)}` : '-' },
   { key: 'status', label: 'Status' },
 ]
 
-export default function ExploreView() {
+// ── Main view ────────────────────────────────────────────────────
+
+export default function ExploreView({ onSelectRun }: { onSelectRun: (run: SelectedRun) => void }) {
+  const navigate = useNavigate()
   const [experiments, setExperiments] = useState<ExperimentSummary[]>([])
   const [selectedExp, setSelectedExp] = useState('')
   const [results, setResults] = useState<ResultRow[]>([])
@@ -34,17 +42,16 @@ export default function ExploreView() {
   const [offset, setOffset] = useState(0)
   const [sort, setSort] = useState('sharpe_ratio')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
-  const [filters, setFilters] = useState({ status: 'ok', min_trades: '0', min_sharpe: '', asset: '' })
-  const [detail, setDetail] = useState<VisualizeResponse | null>(null)
-  const [detailTab, setDetailTab] = useState<'config' | 'trades'>('config')
+  const [filters, setFilters] = useState({ status: 'ok', min_trades: '5', min_sharpe: '', asset: '', trigger: '' })
+  const [expandedRun, setExpandedRun] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const limit = 50
 
   useEffect(() => {
     listExperiments().then(exps => {
       setExperiments(exps)
-      const nonDraft = exps.filter(e => e.status !== 'draft')
-      if (nonDraft.length > 0) setSelectedExp(nonDraft[0].experiment_id)
+      const active = exps.filter(e => e.status !== 'draft')
+      if (active.length > 0) setSelectedExp(active[0].experiment_id)
     })
   }, [])
 
@@ -55,13 +62,14 @@ export default function ExploreView() {
       const params: Record<string, any> = { sort, order, limit, offset }
       if (filters.status) params.status = filters.status
       if (filters.asset) params.asset = filters.asset
+      if (filters.trigger) params.trigger_name = filters.trigger
       if (Number(filters.min_trades) > 0) params.min_trades = filters.min_trades
       if (filters.min_sharpe) params.min_sharpe = filters.min_sharpe
       const data = await queryResults(selectedExp, params)
       setResults(data.results)
       setTotal(data.total)
-    } catch (e: any) {
-      console.error(e)
+    } catch (e) {
+      console.error('Failed to load results:', e)
     } finally {
       setLoading(false)
     }
@@ -75,302 +83,327 @@ export default function ExploreView() {
     setOffset(0)
   }
 
-  const handleDetail = async (runIndex: number) => {
-    if (!selectedExp) return
-    try {
-      const data = await visualizeResult(selectedExp, runIndex)
-      setDetail(data)
-      setDetailTab('config')
-    } catch (e) { console.error(e) }
+  const handleRowClick = (runIndex: number) => {
+    setExpandedRun(expandedRun === runIndex ? null : runIndex)
+  }
+
+  const handleOpenInView = (row: ResultRow) => {
+    onSelectRun({ experimentId: selectedExp, runIndex: row.run_index, row })
+    navigate('/view')
   }
 
   const currentPage = Math.floor(offset / limit) + 1
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-4">Experiment Explorer</h1>
-
-      {/* Experiment selector */}
-      <div className="mb-4">
-        <label className="text-xs text-mg-dim uppercase tracking-wider block mb-1">Experiment</label>
-        <select
-          value={selectedExp}
-          onChange={e => { setSelectedExp(e.target.value); setOffset(0); setDetail(null) }}
-          className="bg-mg-elevated border border-mg-border rounded-lg px-3 py-2 text-sm min-w-[400px] text-mg-text"
-        >
-          {experiments.map(e => (
-            <option key={e.experiment_id} value={e.experiment_id}>
-              {e.name} ({e.status}, {e.total_runs ?? '?'} runs)
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-3 items-end flex-wrap p-3 bg-mg-surface border border-mg-border rounded-lg mb-4">
-        <div>
-          <label className="text-xs text-mg-dim block mb-1">Status</label>
-          <select value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
-            className="bg-mg-elevated border border-mg-border rounded px-2 py-1.5 text-sm text-mg-text">
-            <option value="">All</option>
-            <option value="ok">ok</option>
-            <option value="no_trades">no_trades</option>
-            <option value="error">error</option>
+    <div className="space-y-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <h1 className="subhead text-lg text-mg-dim">Explore Results</h1>
+        <div className="flex items-center gap-3">
+          <label className="subhead text-[10px] text-mg-muted">Experiment</label>
+          <select
+            value={selectedExp}
+            onChange={e => { setSelectedExp(e.target.value); setOffset(0); setExpandedRun(null) }}
+            className="input min-w-[320px]"
+          >
+            {experiments.map(e => (
+              <option key={e.experiment_id} value={e.experiment_id}>
+                {e.name} -- {e.status} ({e.total_runs?.toLocaleString() ?? '?'} runs)
+              </option>
+            ))}
           </select>
         </div>
-        <div>
-          <label className="text-xs text-mg-dim block mb-1">Asset</label>
-          <input value={filters.asset} onChange={e => setFilters(f => ({ ...f, asset: e.target.value }))}
-            placeholder="e.g. BTC" className="bg-mg-elevated border border-mg-border rounded px-2 py-1.5 text-sm w-20 text-mg-text" />
+      </div>
+
+      {/* Filter bar */}
+      <div className="card p-4">
+        <div className="flex gap-4 items-end flex-wrap">
+          <FilterField label="Status">
+            <select value={filters.status} onChange={e => { setFilters(f => ({ ...f, status: e.target.value })); setOffset(0) }}
+              className="input">
+              <option value="">All</option>
+              <option value="ok">ok</option>
+              <option value="no_trades">no_trades</option>
+              <option value="error">error</option>
+            </select>
+          </FilterField>
+          <FilterField label="Asset">
+            <input value={filters.asset} onChange={e => setFilters(f => ({ ...f, asset: e.target.value }))}
+              placeholder="BTC" className="input w-20" />
+          </FilterField>
+          <FilterField label="Trigger">
+            <input value={filters.trigger} onChange={e => setFilters(f => ({ ...f, trigger: e.target.value }))}
+              placeholder="e.g. rsi" className="input w-28" />
+          </FilterField>
+          <FilterField label="Min Trades">
+            <input type="number" value={filters.min_trades} onChange={e => setFilters(f => ({ ...f, min_trades: e.target.value }))}
+              className="input w-20" />
+          </FilterField>
+          <FilterField label="Min Sharpe">
+            <input type="number" step="0.1" value={filters.min_sharpe} onChange={e => setFilters(f => ({ ...f, min_sharpe: e.target.value }))}
+              className="input w-20" />
+          </FilterField>
+          <button onClick={() => { setOffset(0); loadResults() }} className="btn-primary">Search</button>
         </div>
-        <div>
-          <label className="text-xs text-mg-dim block mb-1">Min Trades</label>
-          <input type="number" value={filters.min_trades} onChange={e => setFilters(f => ({ ...f, min_trades: e.target.value }))}
-            className="bg-mg-elevated border border-mg-border rounded px-2 py-1.5 text-sm w-20 text-mg-text" />
-        </div>
-        <div>
-          <label className="text-xs text-mg-dim block mb-1">Min Sharpe</label>
-          <input type="number" step="0.1" value={filters.min_sharpe} onChange={e => setFilters(f => ({ ...f, min_sharpe: e.target.value }))}
-            className="bg-mg-elevated border border-mg-border rounded px-2 py-1.5 text-sm w-20 text-mg-text" />
-        </div>
-        <button onClick={() => { setOffset(0); loadResults() }}
-          className="px-4 py-1.5 bg-mg-blue text-mg-black text-sm font-semibold rounded hover:opacity-90 transition">
-          Search
-        </button>
       </div>
 
       {/* Results info */}
-      <div className="flex justify-between text-xs text-mg-dim mb-2">
-        <span>Showing {offset + 1}-{Math.min(offset + limit, total)} of {total.toLocaleString()} results</span>
-        <span>Sorted by {sort} {order}</span>
+      <div className="flex justify-between text-xs text-mg-dim px-1">
+        <span>{total.toLocaleString()} results {filters.status && `(${filters.status})`}</span>
+        <span className="font-mono">Page {currentPage} / {totalPages} -- sorted by {sort} {order}</span>
       </div>
 
       {/* Results table */}
-      <div className="overflow-x-auto border border-mg-border rounded-lg bg-mg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              {RESULT_COLUMNS.map(col => (
-                <th
-                  key={col.key}
-                  onClick={() => col.sortable !== false && col.key[0] !== '_' && handleSort(col.key)}
-                  className={`text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider border-b border-mg-border whitespace-nowrap
-                    ${col.sortable !== false && col.key[0] !== '_' ? 'cursor-pointer hover:text-mg-blue' : ''}
-                    ${sort === col.key ? 'text-mg-blue' : 'text-mg-dim'}`}
-                >
-                  {col.label}{sort === col.key ? (order === 'desc' ? ' \u25BC' : ' \u25B2') : ''}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={RESULT_COLUMNS.length} className="text-center py-8 text-mg-dim">Loading...</td></tr>
-            ) : results.length === 0 ? (
-              <tr><td colSpan={RESULT_COLUMNS.length} className="text-center py-8 text-mg-dim">No results found</td></tr>
-            ) : results.map(row => (
-              <tr
-                key={row.run_index}
-                onClick={() => handleDetail(row.run_index)}
-                className={`cursor-pointer border-b border-mg-border/50 hover:bg-mg-hover transition-colors
-                  ${detail?.run_index === row.run_index ? 'bg-mg-blue/5 border-l-2 border-l-mg-blue' : ''}`}
-              >
-                {RESULT_COLUMNS.map(col => {
-                  const val = col.key === '_return' ? null : (row as any)[col.key]
-                  const display = col.fmt ? col.fmt(val, row) : (val ?? '-')
-                  const isNum = ['net_pnl', 'sharpe_ratio', 'sortino_ratio', 'calmar_ratio', 'total_return'].includes(col.key)
-                  const isPositive = col.key === 'net_pnl' && val > 0
-                  const isNegative = col.key === 'net_pnl' && val < 0
-                  return (
-                    <td key={col.key} className={`px-3 py-2 whitespace-nowrap ${isNum ? 'font-mono text-xs' : 'text-sm'}
-                      ${isPositive ? 'text-mg-blue' : ''} ${isNegative ? 'text-mg-red' : ''}`}>
-                      {String(display)}
-                    </td>
-                  )
-                })}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-mg-elevated">
+                {COLUMNS.map(col => (
+                  <th
+                    key={col.key}
+                    onClick={() => col.sortable && col.key[0] !== '_' && handleSort(col.key)}
+                    className={`text-left px-3 py-2.5 subhead text-[10px] whitespace-nowrap row-border
+                      ${col.sortable && col.key[0] !== '_' ? 'cursor-pointer hover:text-mg-blue select-none' : ''}
+                      ${sort === col.key ? 'text-mg-blue' : 'text-mg-dim'}`}
+                  >
+                    {col.label}
+                    {sort === col.key && (order === 'desc' ? ' \u25BC' : ' \u25B2')}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={COLUMNS.length} className="text-center py-12 text-mg-dim">Loading...</td></tr>
+              ) : results.length === 0 ? (
+                <tr><td colSpan={COLUMNS.length} className="text-center py-12 text-mg-dim">No results found</td></tr>
+              ) : results.map(row => (
+                <ResultRowGroup
+                  key={row.run_index}
+                  row={row}
+                  isExpanded={expandedRun === row.run_index}
+                  onClick={() => handleRowClick(row.run_index)}
+                  onOpenInView={() => handleOpenInView(row)}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
       <div className="flex gap-3 justify-center items-center mt-4">
         <button disabled={currentPage <= 1} onClick={() => setOffset(Math.max(0, offset - limit))}
-          className="px-3 py-1.5 text-sm border border-mg-border rounded bg-mg-surface text-mg-text disabled:opacity-30">
-          Prev
-        </button>
-        <span className="text-xs text-mg-dim">Page {currentPage} of {totalPages}</span>
+          className="btn-secondary disabled:opacity-30">Prev</button>
+        <span className="text-xs text-mg-dim font-mono">{currentPage} / {totalPages}</span>
         <button disabled={currentPage >= totalPages} onClick={() => setOffset(offset + limit)}
-          className="px-3 py-1.5 text-sm border border-mg-border rounded bg-mg-surface text-mg-text disabled:opacity-30">
-          Next
-        </button>
+          className="btn-secondary disabled:opacity-30">Next</button>
       </div>
-
-      {/* Detail panel */}
-      {detail && (
-        <DetailPanel detail={detail} activeTab={detailTab} onTabChange={setDetailTab} />
-      )}
     </div>
   )
 }
 
-function DetailPanel({ detail, activeTab, onTabChange }: {
-  detail: VisualizeResponse
-  activeTab: 'config' | 'trades'
-  onTabChange: (t: 'config' | 'trades') => void
-}) {
-  const sc = detail.strategy_config
-  const m = detail.metrics
-  const prov = detail.provenance
-  const ec = sc.execution_config || {}
-  const startBal = m.ending_balance - (m.net_pnl || 0)
-  const returnPct = startBal > 0 ? ((m.ending_balance - startBal) / startBal * 100) : 0
+// ── Result row + inline expand ───────────────────────────────────
 
-  const metrics = [
-    { label: 'Sharpe', val: m.sharpe_ratio?.toFixed(2) },
-    { label: 'Sortino', val: m.sortino_ratio?.toFixed(2) },
-    { label: 'Return', val: `${returnPct.toFixed(2)}%` },
-    { label: 'Max Drawdown', val: `${(m.max_drawdown || 0).toFixed(2)}%` },
-    { label: 'Calmar', val: m.calmar_ratio?.toFixed(2) },
-    { label: 'Trades', val: m.total_trades },
-    { label: 'Win Rate', val: `${(m.win_rate || 0).toFixed(1)}%` },
-    { label: 'Net PnL', val: `$${(m.net_pnl || 0).toFixed(2)}` },
-    { label: 'Start Balance', val: `$${startBal.toFixed(2)}` },
-    { label: 'End Balance', val: `$${(m.ending_balance || 0).toFixed(2)}` },
-  ]
+function ResultRowGroup({ row, isExpanded, onClick, onOpenInView }: {
+  row: ResultRow
+  isExpanded: boolean
+  onClick: () => void
+  onOpenInView: () => void
+}) {
+  const pnlColor = row.net_pnl > 0 ? 'text-mg-blue' : row.net_pnl < 0 ? 'text-mg-red' : ''
 
   return (
-    <div className="mt-6 border border-mg-border rounded-lg bg-mg-surface overflow-hidden">
-      <div className="px-4 py-3 border-b border-mg-border flex justify-between items-center">
-        <h3 className="font-semibold text-sm">
-          Run #{detail.run_index} -- {sc.asset} {sc.name}
-        </h3>
-        <div className="flex gap-1">
-          {(['config', 'trades'] as const).map(tab => (
-            <button key={tab} onClick={() => onTabChange(tab)}
-              className={`px-3 py-1 text-xs font-medium rounded ${
-                activeTab === tab ? 'bg-mg-blue text-mg-black' : 'text-mg-dim hover:text-mg-text'
-              }`}>
-              {tab === 'config' ? 'Configuration' : 'Trades'}
-            </button>
+    <>
+      <tr
+        onClick={onClick}
+        className={`cursor-pointer row-border-subtle transition-colors
+          ${isExpanded ? 'bg-mg-elevated' : 'hover:bg-mg-hover'}`}
+      >
+        {COLUMNS.map(col => {
+          const raw = col.key[0] === '_' ? null : (row as any)[col.key]
+          const display = col.fmt ? col.fmt(raw, row) : (raw ?? '-')
+          const isPnl = col.key === 'net_pnl'
+          return (
+            <td key={col.key} className={`px-3 py-2 whitespace-nowrap
+              ${col.mono ? 'font-mono text-xs' : 'text-sm'}
+              ${isPnl ? pnlColor : ''}
+              ${col.key === 'status' ? statusClass(row.status) : ''}`}>
+              {String(display)}
+            </td>
+          )
+        })}
+      </tr>
+      {isExpanded && (
+        <tr>
+          <td colSpan={COLUMNS.length} className="p-0 bg-mg-bg">
+            <div className="border-l-2 border-mg-blue mx-2 my-1">
+              <ExpandedDetail row={row} onOpenInView={onOpenInView} />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+function statusClass(status: string): string {
+  switch (status) {
+    case 'ok': return 'text-mg-blue'
+    case 'no_trades': return 'text-mg-muted'
+    case 'error': return 'text-mg-red'
+    default: return 'text-mg-dim'
+  }
+}
+
+// ── Expanded detail panel (instant, no API call) ────────────────
+
+function ExpandedDetail({ row, onOpenInView }: { row: ResultRow; onOpenInView: () => void }) {
+  const startBal = row.starting_balance_result || (row.ending_balance - (row.net_pnl || 0))
+  const returnPct = startBal > 0 ? ((row.ending_balance - startBal) / startBal * 100) : 0
+
+  // Parse signal configs from JSON
+  let entry: SignalInstance[] = []
+  let exit: SignalInstance[] = []
+  try { entry = JSON.parse(row.entry_json || '[]') } catch {}
+  try { exit = JSON.parse(row.exit_json || '[]') } catch {}
+
+  const metricItems = [
+    { label: 'Sharpe', val: fmtNum(row.sharpe_ratio, 2) },
+    { label: 'Sortino', val: fmtNum(row.sortino_ratio, 2) },
+    { label: 'Calmar', val: fmtNum(row.calmar_ratio, 2) },
+    { label: 'Return', val: `${returnPct.toFixed(1)}%`, color: returnPct >= 0 ? 'text-mg-blue' : 'text-mg-red' },
+    { label: 'Max DD', val: `${fmtNum(row.max_drawdown, 2)}%` },
+    { label: 'Trades', val: row.total_trades },
+    { label: 'Win Rate', val: `${fmtNum(row.win_rate, 1)}%` },
+    { label: 'Net PnL', val: `$${fmtNum(row.net_pnl, 2)}`, color: (row.net_pnl || 0) >= 0 ? 'text-mg-blue' : 'text-mg-red' },
+    { label: 'Start Bal', val: `$${startBal.toFixed(0)}` },
+    { label: 'End Bal', val: `$${fmtNum(row.ending_balance, 0)}` },
+  ]
+
+  // Execution config fields from the Parquet row -- show all non-null values
+  const EXEC_KEYS = [
+    'reward_factor', 'max_risk_per_trade', 'cooldown_bars', 'atr_period',
+    'atr_volatility_factor', 'atr_short_weight', 'atr_long_weight',
+    'stop_loss_calculation', 'initial_balance', 'min_balance_threshold',
+    'min_trade_amount', 'max_open_positions', 'max_trades_per_day',
+    'max_units_per_trade', 'max_trade_amount', 'volatility_window',
+    'target_volatility', 'volatility_mode', 'enable_volatility_adj',
+    'max_hold_time_hours', 'daily_momentum_limit', 'weekly_momentum_limit',
+    'max_hold_bars', 'exit_on_loss_after_bars', 'exit_on_profit_after_bars',
+    'profit_threshold_pct', 'slippage_pct', 'fee_pct',
+  ]
+  const execFields: [string, any][] = EXEC_KEYS
+    .map(k => [k, (row as any)[k]] as [string, any])
+    .filter(([, v]) => v != null)
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Metrics strip */}
+      <div className="grid grid-cols-5 lg:grid-cols-10 gap-2">
+        {metricItems.map(item => (
+          <div key={item.label} className="bg-mg-surface rounded px-2 py-2 text-center border border-mg-border">
+            <div className={`font-mono text-sm font-bold ${item.color || ''}`}>{item.val}</div>
+            <div className="subhead text-[9px] text-mg-dim mt-0.5">{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Signals */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <h4 className="subhead text-[11px] text-mg-dim mb-2">Entry Signals ({entry.length})</h4>
+          <div className="flex gap-2 flex-wrap">
+            {entry.map((sig, i) => <SignalCard key={i} signal={sig} />)}
+          </div>
+        </div>
+        <div>
+          <h4 className="subhead text-[11px] text-mg-dim mb-2">Exit Signals ({exit.length})</h4>
+          {exit.length === 0 ? (
+            <p className="text-xs text-mg-dim">None (SL/TP from execution config)</p>
+          ) : (
+            <div className="flex gap-2 flex-wrap">
+              {exit.map((sig, i) => <SignalCard key={i} signal={sig} />)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Execution config (all visible, no collapse) */}
+      <div>
+        <h4 className="subhead text-[11px] text-mg-dim mb-2">Execution Config</h4>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {execFields.map(([k, v]) => (
+            <div key={k} className="bg-mg-surface rounded border border-mg-border px-2 py-1.5">
+              <div className="font-mono text-xs font-bold">{fmtConfigVal(v)}</div>
+              <div className="text-[9px] text-mg-dim">{k}</div>
+            </div>
           ))}
         </div>
       </div>
 
-      <div className="p-4">
-        {activeTab === 'config' ? (
-          <>
-            {/* Metrics grid */}
-            <SectionLabel>Results</SectionLabel>
-            <div className="grid grid-cols-5 gap-3 mb-6">
-              {metrics.map(m => (
-                <div key={m.label} className="bg-mg-elevated rounded-lg p-3 text-center">
-                  <div className="font-mono text-lg font-bold">{m.val}</div>
-                  <div className="text-[10px] text-mg-dim uppercase tracking-wider mt-0.5">{m.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Entry Signals */}
-            <SectionLabel>Entry Signals ({sc.entry.length})</SectionLabel>
-            <div className="space-y-2 mb-6">
-              {sc.entry.map((sig, i) => <SignalCard key={i} signal={sig} />)}
-            </div>
-
-            {/* Exit Signals */}
-            <SectionLabel>Exit Signals ({sc.exit.length})</SectionLabel>
-            <div className="space-y-2 mb-6">
-              {sc.exit.length === 0 ? (
-                <p className="text-sm text-mg-dim">None (using SL/TP from execution config)</p>
-              ) : sc.exit.map((sig, i) => <SignalCard key={i} signal={sig} />)}
-            </div>
-
-            {/* Execution Config */}
-            <details className="mb-4">
-              <summary className="cursor-pointer text-xs font-semibold text-mg-dim uppercase tracking-wider mb-2">
-                Execution Config ({Object.keys(ec).length} params)
-              </summary>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr>
-                      <th className="text-left px-2 py-1.5 text-mg-dim font-semibold uppercase border-b border-mg-border">Parameter</th>
-                      <th className="text-left px-2 py-1.5 text-mg-dim font-semibold uppercase border-b border-mg-border">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(ec).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => (
-                      <tr key={k} className="border-b border-mg-border/30">
-                        <td className="px-2 py-1 font-mono text-mg-dim">{k}</td>
-                        <td className="px-2 py-1 font-mono">{v === null ? 'null' : typeof v === 'boolean' ? (v ? 'true' : 'false') : String(Math.round(Number(v) * 10000) / 10000)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-
-            {/* Provenance */}
-            <details>
-              <summary className="cursor-pointer text-xs font-semibold text-mg-dim uppercase tracking-wider mb-2">
-                Provenance
-              </summary>
-              <table className="text-xs">
-                <tbody>
-                  {[
-                    ['Data file', prov.data_file_path],
-                    ['File hash', prov.data_file_hash || '(not computed)'],
-                    ['RNG seed', String(prov.rng_seed)],
-                    ['Code version', prov.code_version || '(not set)'],
-                  ].map(([label, val]) => (
-                    <tr key={label}>
-                      <td className="pr-4 py-0.5 text-mg-dim">{label}</td>
-                      <td className="font-mono">{val}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </details>
-          </>
-        ) : (
-          <div className="text-sm text-mg-dim text-center py-8">
-            Trade visualization coming soon. Re-run the backtest to see individual trades and OHLCV chart.
-          </div>
-        )}
+      {/* Provenance + View button */}
+      <div className="flex items-center justify-between pt-2 border-t border-subtle">
+        <div className="text-xs text-mg-muted flex gap-4">
+          <span>data: {row.data_file_path}</span>
+          <span>seed: {row.rng_seed}</span>
+          <span>code: {row.code_version || 'n/a'}</span>
+        </div>
+        <button onClick={onOpenInView} className="btn-primary text-xs">
+          Open in View
+        </button>
       </div>
     </div>
   )
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h4 className="text-xs font-semibold text-mg-dim uppercase tracking-wider mb-2">{children}</h4>
-}
+// ── Shared components ────────────────────────────────────────────
 
-function SignalCard({ signal }: { signal: { name: string; signal_type: string; timeframe: string; params: Record<string, any> } }) {
+function SignalCard({ signal }: { signal: SignalInstance }) {
   const isTrigger = signal.signal_type === 'TRIGGER'
   return (
-    <div className="bg-mg-elevated rounded-lg p-3">
+    <div className="card-elevated p-3 min-w-[200px]">
       <div className="flex items-center gap-2 mb-1">
-        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-          isTrigger ? 'bg-mg-blue text-mg-black' : 'bg-mg-orange text-mg-black'
-        }`}>
+        <span className={isTrigger ? 'badge-trigger' : 'badge-filter'}>
           {signal.signal_type}
         </span>
         <span className="font-semibold text-sm">{signal.name}</span>
-        <span className="text-xs text-mg-dim font-mono">timeframe: {signal.timeframe}</span>
       </div>
       {Object.keys(signal.params).length > 0 && (
-        <div className="mt-1 pl-2 border-l-2 border-mg-border">
+        <div className="mt-1.5 pl-2 border-l-2 border-mg-border">
           {Object.entries(signal.params).map(([k, v]) => (
             <div key={k} className="flex gap-3 text-xs">
-              <span className="text-mg-dim w-28">{k}</span>
-              <span className="font-mono">{String(v)}</span>
+              <span className="text-mg-dim w-24 shrink-0">{k}</span>
+              <span className="font-mono">{fmtConfigVal(v)}</span>
             </div>
           ))}
         </div>
       )}
     </div>
   )
+}
+
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="subhead text-[10px] text-mg-dim block mb-1">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+// ── Utilities ────────────────────────────────────────────────────
+
+function fmtNum(v: any, decimals: number): string {
+  if (v == null) return '-'
+  return Number(v).toFixed(decimals)
+}
+
+function fmtConfigVal(v: any): string {
+  if (v === null || v === undefined) return 'null'
+  if (typeof v === 'boolean') return v ? 'true' : 'false'
+  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(4)
+  return String(v)
 }

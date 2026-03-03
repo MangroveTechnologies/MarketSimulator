@@ -1,0 +1,40 @@
+services:
+  experiment-server:
+    container_name: mangrove-sweep
+    image: mangroveai-mangrove-app
+    restart: unless-stopped
+    ports:
+      - "5100:5100"
+    networks:
+      - mangrove-network
+    volumes:
+      - ../MangroveAI/src/MangroveAI:/app/MangroveAI
+      - ../MangroveAI/.git:/app/MangroveAI/.git:ro
+      - ../MangroveKnowledgeBase:/app/MangroveKnowledgeBase
+      - .:/app/MarketSimulator
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/google_credentials.json:ro
+    environment:
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - NUMEXPR_NUM_THREADS=1
+      - ENVIRONMENT=local
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/google_credentials.json
+      - GCP_PROJECT_ID=mangroveai-dev
+      - EXP_DATA_DIR=/app/MarketSimulator/data
+      - EXP_OHLCV_DIR=/app/MarketSimulator/data/ohlcv
+      - EXP_SIGNALS_METADATA_PATH=/app/MarketSimulator/data/signals_metadata.json
+      - EXP_TRADING_DEFAULTS_PATH=/app/MarketSimulator/config/trading_defaults.json
+      - REDIS_URL=redis://redis:6379/0
+    command: >
+      bash -c "git config --global --add safe.directory /app/MarketSimulator &&
+               git config --global --add safe.directory /app/MangroveAI &&
+               pip install -q fastapi uvicorn duckdb pyarrow pydantic pydantic-settings redis rq &&
+               pip install -q --no-deps /app/MangroveKnowledgeBase &&
+               cd /app/MarketSimulator &&
+               python scripts/generate_signals_metadata.py data/signals_metadata.json &&
+               uvicorn experiment_server.app:app --host 0.0.0.0 --port 5100"
+
+networks:
+  mangrove-network:
+    external: true

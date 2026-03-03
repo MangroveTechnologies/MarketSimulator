@@ -85,6 +85,32 @@ export interface ResultsResponse {
   results: ResultRow[]
 }
 
+export interface OHLCVCandle {
+  time: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
+export interface TradeRecord {
+  trade_id: string
+  outcome: string
+  profit_loss: number
+  side: string
+  entry_price: number
+  exit_price: number
+  position_size: number
+  beginning_balance: number
+  ending_balance: number
+  entry_timestamp: string | null
+  exit_timestamp: string | null
+  exit_reason: string | null
+  stop_loss_price: number | null
+  take_profit_price: number | null
+}
+
 export interface VisualizeResponse {
   run_index: number
   strategy_config: {
@@ -102,7 +128,9 @@ export interface VisualizeResponse {
     code_version: string
     rng_seed: number
   }
-  trades: any[]
+  trades: TradeRecord[]
+  ohlcv: OHLCVCandle[]
+  viz_error?: string
 }
 
 export interface SignalInstance {

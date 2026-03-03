@@ -65,7 +65,13 @@ def create_app() -> FastAPI:
 
     @app.get("/{path:path}")
     async def serve_spa(path: str):
-        """Serve React SPA -- all routes fall through to index.html."""
+        """Serve static files from dist root, then fall through to index.html for SPA routes."""
+        if os.path.isdir(react_dist) and path:
+            # Try to serve the exact file first (SVGs, favicons, etc.)
+            file_path = os.path.join(react_dist, path)
+            if os.path.isfile(file_path):
+                return FileResponse(file_path)
+
         if os.path.isdir(react_dist):
             index = os.path.join(react_dist, "index.html")
             if os.path.exists(index):

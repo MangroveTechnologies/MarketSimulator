@@ -1,29 +1,44 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ConfigureView from './views/ConfigureView'
 import MonitorView from './views/MonitorView'
 import ExploreView from './views/ExploreView'
+import ViewTab from './views/ViewTab'
+import type { ResultRow } from './types'
+
+export interface SelectedRun {
+  experimentId: string
+  runIndex: number
+  row: ResultRow
+}
 
 function App() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('mg-theme')
+    return (saved === 'light' ? 'light' : 'dark')
+  })
+  const [selectedRun, setSelectedRun] = useState<SelectedRun | null>(null)
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    document.documentElement.setAttribute('data-theme', next)
-  }
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('mg-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+
+  const hasRun = selectedRun !== null
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-mg-bg text-mg-text">
         {/* Navigation */}
         <nav className="border-b border-mg-border bg-mg-surface sticky top-0 z-50">
-          <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between h-14">
+          <div className="max-w-[1440px] mx-auto px-6 flex items-center justify-between h-14">
             <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-mg-blue flex items-center justify-center text-xs font-bold text-mg-black">M</div>
-                <span className="font-semibold text-sm tracking-wide">MANGROVE</span>
-              </div>
+              <NavLink to="/explore" className="flex items-center gap-3 shrink-0">
+                <img src="/mangrove-mark.svg" alt="Mangrove" className="h-7 w-auto" />
+                <span className="subhead text-sm text-mg-text tracking-[0.075em]">Mangrove</span>
+              </NavLink>
               <div className="flex gap-1">
                 {[
                   { to: '/configure', label: 'Configure' },
@@ -44,6 +59,22 @@ function App() {
                     {tab.label}
                   </NavLink>
                 ))}
+                {/* View tab -- greyed out until a run is selected */}
+                <NavLink
+                  to="/view"
+                  onClick={e => { if (!hasRun) e.preventDefault() }}
+                  className={({ isActive }) =>
+                    hasRun
+                      ? `px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                          isActive
+                            ? 'bg-mg-elevated text-mg-blue'
+                            : 'text-mg-dim hover:text-mg-text hover:bg-mg-hover'
+                        }`
+                      : 'px-4 py-2 text-sm font-medium rounded-md text-mg-muted opacity-40 cursor-default'
+                  }
+                >
+                  View
+                </NavLink>
               </div>
             </div>
             <button
@@ -56,12 +87,13 @@ function App() {
         </nav>
 
         {/* Content */}
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1440px] mx-auto px-8 py-6">
           <Routes>
-            <Route path="/" element={<Navigate to="/configure" replace />} />
+            <Route path="/" element={<Navigate to="/explore" replace />} />
             <Route path="/configure" element={<ConfigureView />} />
             <Route path="/monitor" element={<MonitorView />} />
-            <Route path="/explore" element={<ExploreView />} />
+            <Route path="/explore" element={<ExploreView onSelectRun={setSelectedRun} />} />
+            <Route path="/view" element={<ViewTab selectedRun={selectedRun} />} />
           </Routes>
         </main>
       </div>

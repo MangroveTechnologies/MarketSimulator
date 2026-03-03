@@ -1,29 +1,50 @@
 #!/bin/bash
-# Start the experiment framework server inside the Docker container.
-# Serves the dashboard at http://localhost:5100/
+# Start the Experiment Framework dashboard.
+#
+# Builds the React UI, then starts (or restarts) the Docker container.
+# Dashboard: http://localhost:5100/
+# API docs:  http://localhost:5100/docs
 #
 # Usage:
-#   docker exec mangrove-sweep /app/MarketSimulator/start_experiment_server.sh
+#   ./start_experiment_server.sh          # build UI + start container
+#   ./start_experiment_server.sh --skip-build   # start container only
 
 set -e
+cd "$(dirname "$0")"
 
-export OMP_NUM_THREADS=1
-export OPENBLAS_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-export NUMEXPR_NUM_THREADS=1
+# ── Build React UI ────────────────────────────────────────────────
+if [[ "$1" != "--skip-build" ]]; then
+  echo "[BUILD] Building React UI..."
+  if [ -d experiment_ui/node_modules ]; then
+    (cd experiment_ui && npx vite build --outDir ../experiment_ui_dist)
+  else
+    echo "[BUILD] Installing npm dependencies first..."
+    (cd experiment_ui && npm install && npx vite build --outDir ../experiment_ui_dist)
+  fi
+  echo "[BUILD] Done. Output: experiment_ui_dist/"
+else
+  echo "[BUILD] Skipped (--skip-build)"
+fi
 
-export EXP_DATA_DIR=/app/MarketSimulator/data
-export EXP_OHLCV_DIR=/app/MarketSimulator/data/ohlcv
-export EXP_SIGNALS_METADATA_PATH=/app/MarketSimulator/data/signals_metadata.json
-export EXP_TRADING_DEFAULTS_PATH=/app/MarketSimulator/data/trading_defaults.json
+# ── Start Docker container ────────────────────────────────────────
+echo ""
+echo "[DOCKER] Starting mangrove-sweep container..."
 
-cd /app/MarketSimulator
+# Stop existing container if running
+if docker ps -a --format '{{.Names}}' | grep -q '^mangrove-sweep$'; then
+  echo "[DOCKER] Stopping existing container..."
+  docker stop mangrove-sweep >/dev/null 2>&1 || true
+  docker rm mangrove-sweep >/dev/null 2>&1 || true
+fi
 
-# Install Python deps if not already installed
-pip install -q fastapi uvicorn duckdb pyarrow pydantic pydantic-settings 2>/dev/null
+docker compose up -d
 
-echo "[EXPERIMENT SERVER] Starting on port 5100..."
-echo "[EXPERIMENT SERVER] Dashboard: http://localhost:5100/"
-echo "[EXPERIMENT SERVER] API docs:  http://localhost:5100/docs"
-
-exec uvicorn experiment_server.app:app --host 0.0.0.0 --port 5100
+echo ""
+echo "=========================================="
+echo "  Experiment Framework is running!"
+echo "  Dashboard: http://localhost:5100/"
+echo "  API docs:  http://localhost:5100/docs"
+echo "=========================================="
+echo ""
+echo "Logs: docker logs -f mangrove-sweep"
+echo "Stop: docker compose down"

@@ -54,11 +54,11 @@ class RandomSignalConfig(BaseModel):
 
     n_entry_triggers: int = 1
     min_entry_filters: int = 1
-    max_entry_filters: int = 3
+    max_entry_filters: int = 2
     min_exit_triggers: int = 0
     max_exit_triggers: int = 1
     min_exit_filters: int = 0
-    max_exit_filters: int = 3
+    max_exit_filters: int = 2
     n_param_draws: int = 1  # params randomly drawn from KB ranges
 
 

@@ -36,16 +36,34 @@ def _config_path(experiment_id: str) -> str:
     return os.path.join(_experiment_dir(experiment_id), "config.json")
 
 
-def _get_code_version() -> str:
-    """Auto-detect git SHA. Returns empty string if not in a git repo."""
+def _git_sha(repo_path: str) -> str:
+    """Get short git SHA for a repo. Returns empty string on failure."""
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "-C", repo_path, "rev-parse", "--short", "HEAD"],
             capture_output=True, text=True, timeout=5,
+            env={**os.environ, "GIT_DISCOVERY_ACROSS_FILESYSTEM": "1"},
         )
         return result.stdout.strip() if result.returncode == 0 else ""
     except Exception:
         return ""
+
+
+def _get_code_version() -> str:
+    """Build a code version string from both repos.
+
+    Format: "ms:<hash> ai:<hash>" so we know exactly which code produced results.
+    The backtest engine lives in MangroveAI, so the ai hash is critical for
+    reproducibility. Falls back to MarketSimulator-only if MangroveAI isn't available.
+    """
+    ms = _git_sha("/app/MarketSimulator")
+    ai = _git_sha("/app/MangroveAI")
+    parts = []
+    if ms:
+        parts.append(f"ms:{ms}")
+    if ai:
+        parts.append(f"ai:{ai}")
+    return " ".join(parts) if parts else ""
 
 
 # ---------------------------------------------------------------------------

@@ -37,5 +37,18 @@ export const pauseExperiment = (id: string) =>
 export const queryResults = (id: string, params: Record<string, any> = {}) =>
   api.get<ResultsResponse>(`/experiments/${id}/results`, { params }).then(r => r.data)
 
+export const getOhlcv = (expId: string, runIndex: number) =>
+  api.get<{ ohlcv: import('../types').OHLCVCandle[] }>(`/experiments/${expId}/results/${runIndex}/ohlcv`).then(r => r.data)
+
 export const visualizeResult = (expId: string, runIndex: number) =>
   api.get<VisualizeResponse>(`/experiments/${expId}/results/${runIndex}/visualize`).then(r => r.data)
+
+// Templates
+export const listTemplates = () =>
+  api.get<{ name: string; description: string; search_mode: string; datasets_count: number }[]>('/templates').then(r => r.data)
+
+export const getTemplate = (name: string) =>
+  api.get<Record<string, any>>(`/templates/${name}`).then(r => r.data)
+
+export const saveTemplate = (name: string, config: any) =>
+  api.post('/templates', { name, config }).then(r => r.data)

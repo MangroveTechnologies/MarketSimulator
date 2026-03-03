@@ -9,13 +9,42 @@ Last updated: 2026-03-02
 - **FastAPI backend** (port 5100) with full REST API -- 22 endpoints, 87+ tests
 - **DuckDB + Parquet** storage for experiment results
 - **Parallel worker execution** via multiprocessing with real MangroveAI backtest engine
-- **Dashboard** at http://localhost:5100/ (React SPA, basic) and http://localhost:5100/old (HTML fallback)
+- **React SPA dashboard** at http://localhost:5100/ with 3 views:
+  - **Explore** -- results table with inline detail expansion, OHLCV chart (lightweight-charts v5), trades tab
+  - **Monitor** -- experiment list, progress bars, pause/resume controls, dataset breakdown
+  - **Configure** -- collapsible sections, dataset selector, signal config, execution config editor
+- **Visualize endpoint** -- re-runs backtests from stored Parquet data to produce trade history + OHLCV candles
+  - Monkeypatches `MarketDataLoader.load()` to inject local CSV data (no CoinAPI calls)
+  - Uses `ENVIRONMENT=sweep` with `sweep-config.json` (secrets-free) to import MangroveAI
 - **7 OHLCV datasets** (BTC/1d, ETH/4h, DOGE/5m, LINK/30m, PAXG/1h, SOL/5m, XRP/15m)
 - **96 signals** (34 triggers, 62 filters) from MangroveKnowledgeBase
 - **Docker container** `mangrove-sweep` with `--restart unless-stopped`
 - **config_hash** column in Parquet schema (SHA256 of full strategy config for dedup)
 - **Dual search mode** -- random (sample N) and grid (enumerate all)
-- **3 experiments** completed (70 runs) + 1 running ("seed", 300K runs)
+- **3 experiments** completed (70 runs) + 1 paused ("seed", 227K/300K runs, 75.7%)
+
+### Quick Start
+
+```bash
+cd MarketSimulator
+./start_experiment_server.sh
+```
+
+This builds the React UI and starts the Docker container. Dashboard at http://localhost:5100/.
+
+Options:
+- `./start_experiment_server.sh --skip-build` -- start container without rebuilding UI
+- `docker compose down` -- stop the container
+- `docker logs -f mangrove-sweep` -- tail logs
+
+### Prerequisites
+
+1. **MangroveAI source** at `../MangroveAI/src/MangroveAI` (mounted into container)
+2. **Docker image** `mangroveai-mangrove-app` (the MangroveAI base image)
+3. **Docker network** `mangrove-network` (`docker network create mangrove-network`)
+4. **GCP credentials** at `~/.config/gcloud/application_default_credentials.json`
+5. **Node.js 18+** for building the React UI
+6. **sweep-config.json** at `MangroveAI/config/sweep-config.json` (secrets-free config for backtest engine import)
 
 ### Known Backend Limitations
 
@@ -50,28 +79,6 @@ Last updated: 2026-03-02
    when done. Status was manually fixed for first experiments. Need auto-completion
    detection (check if completed count == total_runs).
 
-### React Frontend Status
-
-The React app at `experiment_ui/` is scaffolded with Vite + TypeScript + Tailwind but
-needs significant work:
-
-**Issues identified by user:**
-- Color scheme is bad -- Tailwind v4 custom theme variables aren't rendering correctly
-- Light theme toggle is broken
-- Configure view is a placeholder (links to old HTML)
-- Detail panel should expand inline (accordion), not below table
-- Execution config display needs grouped sections, not one long table
-- Missing interactive OHLCV chart with trade markers (lightweight-charts)
-- Missing trades table tab
-- Missing start/end dates, num_bars, file_hash, code_version in results display
-
-**What needs to happen:**
-1. Fix Tailwind v4 theme -- either fix `@theme` approach or use standard CSS variables
-2. Rebuild Explore view with inline-expanding rows, grouped config, chart + trades tabs
-3. Build Configure view (port from HTML dashboard with improvements)
-4. Build Monitor view with real SSE progress streaming
-5. Apply Mangrove brand properly (see `docs/plans/2026-03-01-experiment-framework-ui-ux.md`)
-
 ### Design Documents
 
 All in `docs/plans/`:
@@ -85,7 +92,9 @@ All in `docs/plans/`:
 
 In `branding/`: 5 SVG logos + `brand-guidelines.md`
 
-### Container Setup
+### Container Setup (manual alternative)
+
+If you don't want to use docker-compose:
 
 ```bash
 docker run -d --name mangrove-sweep \
@@ -102,7 +111,6 @@ docker run -d --name mangrove-sweep \
     -e EXP_TRADING_DEFAULTS_PATH=/app/MarketSimulator/data/trading_defaults.json \
     mangroveai-mangrove-app \
     bash -c "pip install -q fastapi uvicorn duckdb pyarrow pydantic pydantic-settings redis rq && \
-             git config --global --add safe.directory /app/MarketSimulator && \
              cd /app/MarketSimulator && uvicorn experiment_server.app:app --host 0.0.0.0 --port 5100"
 ```
 

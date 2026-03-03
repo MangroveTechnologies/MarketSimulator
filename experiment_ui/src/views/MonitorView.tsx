@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { listExperiments, getExperiment, pauseExperiment, launchExperiment } from '../api/client'
 import type { ExperimentSummary } from '../types'
 
@@ -171,7 +171,7 @@ export default function MonitorView() {
             </div>
 
             {/* Stats grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
               <Stat label="Total Runs" value={detail.total_runs?.toLocaleString() ?? '-'} />
               <Stat label="Completed" value={detail.completed_runs?.toLocaleString() ?? '0'} accent={detail.completed_runs > 0} />
               <Stat label="Remaining" value={detail.total_runs ? (detail.total_runs - (detail.completed_runs || 0)).toLocaleString() : '-'} />

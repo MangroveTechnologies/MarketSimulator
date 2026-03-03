@@ -30,6 +30,15 @@ function Section({ title, badge, defaultOpen = true, children }: {
   )
 }
 
+// ── Sweep axis type ──────────────────────────────────────────────
+
+interface SweepAxis {
+  param: string
+  min: string
+  max: string
+  n: string
+}
+
 // ── Main view ────────────────────────────────────────────────────
 
 export default function ConfigureView() {
@@ -60,6 +69,9 @@ export default function ConfigureView() {
 
   // Exec config overrides
   const [execOverrides, setExecOverrides] = useState<Record<string, string>>({})
+
+  // Sweep axes
+  const [sweepAxes, setSweepAxes] = useState<SweepAxis[]>([])
 
   // Lifecycle
   const [createdId, setCreatedId] = useState('')
@@ -134,6 +146,47 @@ export default function ConfigureView() {
     }
   }
 
+  // Sweep axis helpers
+  const addSweepAxis = () => {
+    const defaultParam = Object.keys(execDefaults)[0] || ''
+    setSweepAxes(prev => [...prev, { param: defaultParam, min: '', max: '', n: '5' }])
+  }
+
+  const updateSweepAxis = (index: number, field: keyof SweepAxis, value: string) => {
+    setSweepAxes(prev => prev.map((axis, i) =>
+      i === index ? { ...axis, [field]: value } : axis
+    ))
+  }
+
+  const removeSweepAxis = (index: number) => {
+    setSweepAxes(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Build sweep_axes for the config payload
+  function buildSweepAxes(): any[] {
+    return sweepAxes
+      .filter(axis => axis.param && axis.min && axis.max && axis.n)
+      .map(axis => {
+        const min = Number(axis.min)
+        const max = Number(axis.max)
+        const n = Number(axis.n)
+
+        if (searchMode === 'random') {
+          // For random mode: generate uniformly sampled values
+          const values: number[] = []
+          for (let i = 0; i < n; i++) {
+            const value = min + (max - min) * (i / Math.max(n - 1, 1))
+            values.push(Number(value.toFixed(6)))
+          }
+          return { param: axis.param, values }
+        }
+
+        // For grid mode: min, max, step
+        const step = n > 1 ? (max - min) / (n - 1) : max - min
+        return { param: axis.param, min, max, step: Number(step.toFixed(6)) }
+      })
+  }
+
   // Build config object
   const buildConfig = useCallback(() => {
     const selectedDs = datasets.filter(d => selectedDatasets.has(d.file)).map(d => ({
@@ -173,10 +226,10 @@ export default function ConfigureView() {
       datasets: selectedDs,
       execution_config: {
         base: execBase,
-        sweep_axes: [],
+        sweep_axes: buildSweepAxes(),
       },
     }
-  }, [name, description, seed, searchMode, nRandom, datasets, selectedDatasets, execDefaults, execOverrides,
+  }, [name, description, seed, searchMode, nRandom, datasets, selectedDatasets, execDefaults, execOverrides, sweepAxes,
     nEntryTriggers, minEntryFilters, maxEntryFilters, minExitTriggers, maxExitTriggers, minExitFilters, maxExitFilters, nParamDraws])
 
   // Actions
@@ -234,6 +287,7 @@ export default function ConfigureView() {
   const triggerCount = signals.filter(s => s.type === 'TRIGGER').length
   const filterCount = signals.filter(s => s.type === 'FILTER').length
   const totalRuns = searchMode === 'random' ? selectedDatasets.size * nRandom : 0
+  const execDefaultKeys = Object.keys(execDefaults)
 
   return (
     <div className="space-y-4 pb-24">
@@ -317,14 +371,14 @@ export default function ConfigureView() {
                     className={`cursor-pointer row-border-subtle hover:bg-mg-hover transition-colors
                       ${selectedDatasets.has(d.file) ? 'border-l-2 border-l-mg-blue' : 'border-l-2 border-l-transparent'}`}
                   >
-                    <td className="px-3 py-1.5">
+                    <td className="px-3 py-2">
                       <input type="checkbox" checked={selectedDatasets.has(d.file)} readOnly className="accent-[#42A7C6] pointer-events-none" />
                     </td>
-                    <td className="px-3 py-1.5 font-semibold">{d.asset}</td>
-                    <td className="px-3 py-1.5 font-mono text-xs">{d.timeframe}</td>
-                    <td className="px-3 py-1.5 font-mono text-xs text-mg-dim">{d.start_date}</td>
-                    <td className="px-3 py-1.5 font-mono text-xs text-mg-dim">{d.end_date}</td>
-                    <td className="px-3 py-1.5 font-mono text-xs text-right">{d.rows.toLocaleString()}</td>
+                    <td className="px-3 py-2 font-semibold">{d.asset}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{d.timeframe}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-mg-dim">{d.start_date}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-mg-dim">{d.end_date}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-right">{d.rows.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -369,7 +423,7 @@ export default function ConfigureView() {
                   className="input w-40 text-sm font-mono"
                 />
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <NumField label="Entry triggers" value={nEntryTriggers} onChange={setNEntryTriggers} />
                 <NumField label="Min entry filters" value={minEntryFilters} onChange={setMinEntryFilters} />
                 <NumField label="Max entry filters" value={maxEntryFilters} onChange={setMaxEntryFilters} />
@@ -397,27 +451,105 @@ export default function ConfigureView() {
           {Object.keys(execDefaults).length === 0 ? (
             <div className="text-sm text-mg-dim">Loading defaults...</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Object.entries(execDefaults).map(([key, defaultVal]) => (
-                <div key={key}>
-                  <label className="text-[10px] text-mg-dim block mb-0.5 truncate" title={key}>{key}</label>
-                  <input
-                    type="text"
-                    value={execOverrides[key] ?? ''}
-                    placeholder={String(defaultVal)}
-                    onChange={e => setExecOverrides(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="input w-full text-xs font-mono"
-                  />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Object.entries(execDefaults).map(([key, defaultVal]) => (
+                  <div key={key}>
+                    <label className="text-[10px] text-mg-dim block mb-1 truncate" title={key}>{key}</label>
+                    <input
+                      type="text"
+                      value={execOverrides[key] ?? ''}
+                      placeholder={String(defaultVal)}
+                      onChange={e => setExecOverrides(prev => ({ ...prev, [key]: e.target.value }))}
+                      className="input w-full text-xs font-mono"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Sweep Axes */}
+              <div className="mt-4 pt-3 border-t border-subtle">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-mg-dim">
+                    Sweep Axes
+                    {sweepAxes.length > 0 && (
+                      <span className="ml-2 text-mg-blue font-normal normal-case tracking-normal">
+                        ({sweepAxes.length} {sweepAxes.length === 1 ? 'axis' : 'axes'})
+                      </span>
+                    )}
+                  </h4>
+                  <button onClick={addSweepAxis} className="btn-secondary text-xs">
+                    Add Axis
+                  </button>
                 </div>
-              ))}
-            </div>
+                {sweepAxes.length === 0 ? (
+                  <p className="text-xs text-mg-muted">No sweep axes configured. All runs use the base values above.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {sweepAxes.map((axis, i) => (
+                      <div key={i} className="flex items-end gap-3 bg-mg-elevated rounded-lg p-3 border border-mg-border">
+                        <div className="flex-1 min-w-[140px]">
+                          <label className="text-[10px] text-mg-dim block mb-1">Parameter</label>
+                          <select
+                            value={axis.param}
+                            onChange={e => updateSweepAxis(i, 'param', e.target.value)}
+                            className="input w-full text-xs font-mono"
+                          >
+                            {execDefaultKeys.map(k => (
+                              <option key={k} value={k}>{k}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="w-24">
+                          <label className="text-[10px] text-mg-dim block mb-1">Min</label>
+                          <input
+                            type="number" step="any"
+                            value={axis.min}
+                            onChange={e => updateSweepAxis(i, 'min', e.target.value)}
+                            placeholder="0"
+                            className="input w-full text-xs font-mono"
+                          />
+                        </div>
+                        <div className="w-24">
+                          <label className="text-[10px] text-mg-dim block mb-1">Max</label>
+                          <input
+                            type="number" step="any"
+                            value={axis.max}
+                            onChange={e => updateSweepAxis(i, 'max', e.target.value)}
+                            placeholder="100"
+                            className="input w-full text-xs font-mono"
+                          />
+                        </div>
+                        <div className="w-20">
+                          <label className="text-[10px] text-mg-dim block mb-1">N</label>
+                          <input
+                            type="number" min="2"
+                            value={axis.n}
+                            onChange={e => updateSweepAxis(i, 'n', e.target.value)}
+                            placeholder="5"
+                            className="input w-full text-xs font-mono"
+                          />
+                        </div>
+                        <button
+                          onClick={() => removeSweepAxis(i)}
+                          className="px-2 py-1.5 text-xs text-mg-red hover:bg-red-10 rounded transition-colors"
+                          title="Remove axis"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </Section>
 
       {/* Stats bar (sticky) */}
       <div className="fixed bottom-0 left-0 right-0 bg-mg-surface border-t border-mg-border z-40">
-        <div className="max-w-[1440px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <StatChip label="Datasets" value={selectedDatasets.size} />
             <StatChip label="Triggers" value={triggerCount} />

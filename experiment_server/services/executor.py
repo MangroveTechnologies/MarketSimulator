@@ -103,7 +103,11 @@ def get_experiment(experiment_id: str) -> ExperimentConfig | None:
 
 
 def list_experiments() -> list[ExperimentConfig]:
-    """List all experiments sorted by creation date (newest first)."""
+    """List all experiments sorted by creation date (newest first).
+
+    Auto-detects completion: if all runs are done but status is still
+    "running", transitions to "completed" and persists the change.
+    """
     exp_dir = _experiments_dir()
     if not os.path.isdir(exp_dir):
         return []
@@ -115,7 +119,16 @@ def list_experiments() -> list[ExperimentConfig]:
             try:
                 with open(config_path) as f:
                     data = json.load(f)
-                results.append(ExperimentConfig(**data))
+                config = ExperimentConfig(**data)
+
+                # Auto-complete check
+                if config.status == "running" and config.total_runs:
+                    done = len(count_completed(_experiment_dir(config.experiment_id)))
+                    if done >= config.total_runs:
+                        config.status = "completed"
+                        _save_config(config)
+
+                results.append(config)
             except Exception:
                 continue
     return results
@@ -328,11 +341,19 @@ def get_experiment_progress(experiment_id: str) -> dict[str, Any]:
     exp_dir = _experiment_dir(experiment_id)
     completed_indices = count_completed(exp_dir)
 
+    total = config.total_runs or 0
+    done = len(completed_indices)
+
+    # Auto-complete: if all runs finished and status is still "running", mark completed
+    if config.status == "running" and total > 0 and done >= total:
+        config.status = "completed"
+        _save_config(config)
+
     return {
         "experiment_id": experiment_id,
         "status": config.status,
-        "total_runs": config.total_runs or 0,
-        "completed": len(completed_indices),
+        "total_runs": total,
+        "completed": done,
     }
 
 

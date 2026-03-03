@@ -31,6 +31,8 @@ const COLUMNS: { key: string; label: string; mono?: boolean; sortable?: boolean;
   { key: 'status', label: 'Status' },
 ]
 
+const PAGE_SIZES = [50, 100, 200, 500]
+
 // ── Main view ────────────────────────────────────────────────────
 
 export default function ExploreView({ onSelectRun }: { onSelectRun: (run: SelectedRun) => void }) {
@@ -45,7 +47,7 @@ export default function ExploreView({ onSelectRun }: { onSelectRun: (run: Select
   const [filters, setFilters] = useState({ status: 'ok', min_trades: '5', min_sharpe: '', asset: '', trigger: '' })
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  const limit = 50
+  const [limit, setLimit] = useState(100)
 
   useEffect(() => {
     listExperiments().then(exps => {
@@ -73,7 +75,7 @@ export default function ExploreView({ onSelectRun }: { onSelectRun: (run: Select
     } finally {
       setLoading(false)
     }
-  }, [selectedExp, sort, order, offset, filters])
+  }, [selectedExp, sort, order, offset, limit, filters])
 
   useEffect(() => { loadResults() }, [loadResults])
 
@@ -90,6 +92,11 @@ export default function ExploreView({ onSelectRun }: { onSelectRun: (run: Select
   const handleOpenInView = (row: ResultRow) => {
     onSelectRun({ experimentId: selectedExp, runIndex: row.run_index, row })
     navigate('/view')
+  }
+
+  const handlePageSizeChange = (newLimit: number) => {
+    setLimit(newLimit)
+    setOffset(0)
   }
 
   const currentPage = Math.floor(offset / limit) + 1
@@ -200,6 +207,15 @@ export default function ExploreView({ onSelectRun }: { onSelectRun: (run: Select
         <span className="text-xs text-mg-dim font-mono">{currentPage} / {totalPages}</span>
         <button disabled={currentPage >= totalPages} onClick={() => setOffset(offset + limit)}
           className="btn-secondary disabled:opacity-30">Next</button>
+        <select
+          value={limit}
+          onChange={e => handlePageSizeChange(Number(e.target.value))}
+          className="input text-xs ml-3"
+        >
+          {PAGE_SIZES.map(size => (
+            <option key={size} value={size}>{size} / page</option>
+          ))}
+        </select>
       </div>
     </div>
   )
@@ -302,7 +318,7 @@ function ExpandedDetail({ row, onOpenInView }: { row: ResultRow; onOpenInView: (
   return (
     <div className="p-4 space-y-4">
       {/* Metrics strip */}
-      <div className="grid grid-cols-5 lg:grid-cols-10 gap-2">
+      <div className="grid grid-cols-5 lg:grid-cols-10 gap-3">
         {metricItems.map(item => (
           <div key={item.label} className="bg-mg-surface rounded px-2 py-2 text-center border border-mg-border">
             <div className={`font-mono text-sm font-bold ${item.color || ''}`}>{item.val}</div>
@@ -334,9 +350,9 @@ function ExpandedDetail({ row, onOpenInView }: { row: ResultRow; onOpenInView: (
       {/* Execution config (all visible, no collapse) */}
       <div>
         <h4 className="subhead text-[11px] text-mg-dim mb-2">Execution Config</h4>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {execFields.map(([k, v]) => (
-            <div key={k} className="bg-mg-surface rounded border border-mg-border px-2 py-1.5">
+            <div key={k} className="bg-mg-surface rounded border border-mg-border px-3 py-2">
               <div className="font-mono text-xs font-bold">{fmtConfigVal(v)}</div>
               <div className="text-[9px] text-mg-dim">{k}</div>
             </div>

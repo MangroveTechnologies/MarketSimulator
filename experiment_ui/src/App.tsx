@@ -39,7 +39,7 @@ function App() {
                 <img src="/mangrove-mark.svg" alt="Mangrove" className="h-7 w-auto" />
                 <span className="subhead text-sm text-mg-text tracking-[0.075em]">Mangrove</span>
               </NavLink>
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 {[
                   { to: '/configure', label: 'Configure' },
                   { to: '/monitor', label: 'Monitor' },

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { createChart, CandlestickSeries, HistogramSeries, createSeriesMarkers, type IChartApi, type ISeriesApi } from 'lightweight-charts'
+import { useState, useEffect, useRef } from 'react'
+import { createChart, CandlestickSeries, HistogramSeries, createSeriesMarkers, type IChartApi } from 'lightweight-charts'
 import { getOhlcv, visualizeResult } from '../api/client'
 import type { SelectedRun } from '../App'
 import type { VisualizeResponse, OHLCVCandle, TradeRecord, SignalInstance } from '../types'
@@ -111,9 +111,9 @@ export default function ViewTab({ selectedRun }: { selectedRun: SelectedRun | nu
       </div>
 
       {/* Metrics strip */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-11 gap-2">
+      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-11 gap-3">
         {metricItems.map(item => (
-          <div key={item.label} className="card px-2 py-2 text-center">
+          <div key={item.label} className="card px-3 py-2.5 text-center">
             <div className={`font-mono text-sm font-bold ${item.color || ''}`}>{item.val}</div>
             <div className="subhead text-[9px] text-mg-dim mt-0.5">{item.label}</div>
           </div>
@@ -130,7 +130,7 @@ export default function ViewTab({ selectedRun }: { selectedRun: SelectedRun | nu
             <span className="text-[10px] text-mg-blue font-mono">{vizData.trades.length} trade markers shown</span>
           )}
         </div>
-        <div className="p-2">
+        <div className="p-3">
           {candleLoading ? (
             <div className="h-[480px] flex items-center justify-center text-mg-dim text-sm">Loading chart data...</div>
           ) : candles.length > 0 ? (
@@ -167,9 +167,9 @@ export default function ViewTab({ selectedRun }: { selectedRun: SelectedRun | nu
         {/* Execution config */}
         <div className="mt-4 pt-3 border-t border-subtle">
           <h4 className="subhead text-[11px] text-mg-dim mb-2">Execution Config</h4>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {execFields.map(([k, v]) => (
-              <div key={k} className="bg-mg-elevated rounded border border-mg-border px-2 py-1.5">
+              <div key={k} className="bg-mg-elevated rounded border border-mg-border px-3 py-2">
                 <div className="font-mono text-xs font-bold">{fmtConfigVal(v)}</div>
                 <div className="text-[9px] text-mg-dim">{k}</div>
               </div>
@@ -263,7 +263,7 @@ function OHLCVChart({ candles, trades }: { candles: OHLCVCandle[]; trades: Trade
       wickUpColor: '#42A7C680',
       wickDownColor: '#FF471380',
     })
-    candleSeries.setData(candles)
+    candleSeries.setData(candles as any)
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
@@ -274,7 +274,7 @@ function OHLCVChart({ candles, trades }: { candles: OHLCVCandle[]; trades: Trade
     })
     volumeSeries.setData(
       candles.map(c => ({
-        time: c.time,
+        time: c.time as any,
         value: c.volume,
         color: c.close >= c.open ? '#42A7C620' : '#FF471320',
       }))
@@ -355,19 +355,19 @@ function TradesTable({ trades }: { trades: TradeRecord[] }) {
           <tbody>
             {trades.map((t, i) => (
               <tr key={i} className="row-border-subtle hover:bg-mg-hover transition-colors">
-                <td className="px-3 py-1.5 font-mono text-mg-dim">{i + 1}</td>
-                <td className="px-3 py-1.5 font-mono text-mg-dim whitespace-nowrap">{fmtTimestamp(t.entry_timestamp)}</td>
-                <td className="px-3 py-1.5 font-mono text-mg-dim whitespace-nowrap">{fmtTimestamp(t.exit_timestamp)}</td>
-                <td className="px-3 py-1.5 font-mono">{t.position_size.toFixed(4)}</td>
-                <td className="px-3 py-1.5 font-mono">${t.entry_price.toFixed(2)}</td>
-                <td className="px-3 py-1.5 font-mono">${t.exit_price.toFixed(2)}</td>
-                <td className="px-3 py-1.5 font-mono text-mg-dim">{t.stop_loss_price ? `$${t.stop_loss_price.toFixed(2)}` : '-'}</td>
-                <td className="px-3 py-1.5 font-mono text-mg-dim">{t.take_profit_price ? `$${t.take_profit_price.toFixed(2)}` : '-'}</td>
-                <td className={`px-3 py-1.5 font-mono font-semibold ${t.profit_loss >= 0 ? 'text-mg-blue' : 'text-mg-red'}`}>
+                <td className="px-3 py-2 font-mono text-mg-dim">{i + 1}</td>
+                <td className="px-3 py-2 font-mono text-mg-dim whitespace-nowrap">{fmtTimestamp(t.entry_timestamp)}</td>
+                <td className="px-3 py-2 font-mono text-mg-dim whitespace-nowrap">{fmtTimestamp(t.exit_timestamp)}</td>
+                <td className="px-3 py-2 font-mono">{t.position_size.toFixed(4)}</td>
+                <td className="px-3 py-2 font-mono">${t.entry_price.toFixed(2)}</td>
+                <td className="px-3 py-2 font-mono">${t.exit_price.toFixed(2)}</td>
+                <td className="px-3 py-2 font-mono text-mg-dim">{t.stop_loss_price ? `$${t.stop_loss_price.toFixed(2)}` : '-'}</td>
+                <td className="px-3 py-2 font-mono text-mg-dim">{t.take_profit_price ? `$${t.take_profit_price.toFixed(2)}` : '-'}</td>
+                <td className={`px-3 py-2 font-mono font-semibold ${t.profit_loss >= 0 ? 'text-mg-blue' : 'text-mg-red'}`}>
                   {t.profit_loss >= 0 ? '+' : ''}{t.profit_loss.toFixed(2)}
                 </td>
-                <td className="px-3 py-1.5 font-mono">${t.ending_balance.toFixed(0)}</td>
-                <td className="px-3 py-1.5">
+                <td className="px-3 py-2 font-mono">${t.ending_balance.toFixed(0)}</td>
+                <td className="px-3 py-2">
                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                     t.exit_reason === 'TP' ? 'bg-blue-15 text-mg-blue' :
                     t.exit_reason === 'SL' ? 'bg-red-15 text-mg-red' :

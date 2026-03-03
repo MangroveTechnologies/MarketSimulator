@@ -33,6 +33,7 @@ services:
                pip install -q --no-deps /app/MangroveKnowledgeBase &&
                cd /app/MarketSimulator &&
                python scripts/generate_signals_metadata.py data/signals_metadata.json &&
+               python scripts/generate_daily_companions.py data/ohlcv &&
                uvicorn experiment_server.app:app --host 0.0.0.0 --port 5100"
 
 networks:

@@ -4,8 +4,9 @@ Re-runs a single backtest from stored Parquet data to produce:
 - Full trade history with entry/exit timestamps and prices
 - OHLCV candle data for charting
 
-Monkeypatches MarketDataLoader.load() so the backtest engine reads from
-the local CSV file instead of calling CoinAPI.
+Injects local CSV data (signal TF + daily companion) into the engine's
+_OHLCV_CACHE so it reads from files instead of calling CoinAPI. Uses the
+same injection mechanism as the sweep worker.
 """
 
 from __future__ import annotations
@@ -14,10 +15,8 @@ import json
 import logging
 import os
 import sys
-from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
-from unittest.mock import patch
 
 import pandas as pd
 
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 _engine_available = False
 _run_backtest = None
 _BacktestRequest = None
-_MarketDataLoader = None
+_ds_module = None
 _Position = None
 
 
@@ -40,7 +39,7 @@ def _ensure_engine():
     We override ENVIRONMENT=sweep to use a secrets-free config file
     (sweep-config.json) since the backtest engine needs no external services.
     """
-    global _engine_available, _run_backtest, _BacktestRequest, _MarketDataLoader, _Position
+    global _engine_available, _run_backtest, _BacktestRequest, _ds_module, _Position
     if _run_backtest is not None:
         return
 
@@ -51,12 +50,12 @@ def _ensure_engine():
 
         from MangroveAI.domains.backtesting.services import run_backtest
         from MangroveAI.domains.backtesting.domain_models.requests import BacktestRequest
-        from MangroveAI.domains.backtesting.data_source import MarketDataLoader
+        from MangroveAI.domains.backtesting import data_source as ds_module
         from MangroveAI.domains.positions.position import Position
 
         _run_backtest = run_backtest
         _BacktestRequest = BacktestRequest
-        _MarketDataLoader = MarketDataLoader
+        _ds_module = ds_module
         _Position = Position
         _engine_available = True
 
@@ -76,33 +75,16 @@ def _ensure_engine():
             os.environ["ENVIRONMENT"] = old_env
 
 
-@contextmanager
-def _inject_ohlcv(df: pd.DataFrame):
-    """Monkeypatch MarketDataLoader.load() to return *df* for every call.
-
-    The backtest engine creates MarketDataLoader instances internally and
-    calls .load() to fetch OHLCV from CoinAPI. We intercept that so it
-    returns our local CSV data instead.
-    """
-    original_load = _MarketDataLoader.load
-
-    def _patched_load(self):
-        self._cached_data = df
-        return df
-
-    _MarketDataLoader.load = _patched_load
-    try:
-        yield
-    finally:
-        _MarketDataLoader.load = original_load
-
-
 def run_visualization(row: dict[str, Any], strategy_config: dict[str, Any]) -> dict[str, Any]:
     """Re-run a backtest and return trades + OHLCV data."""
     _ensure_engine()
 
     if not _engine_available:
         return {"trades": [], "ohlcv": [], "error": "MangroveAI engine not available"}
+
+    from experiment_server.services.ohlcv_utils import (
+        inject_ohlcv_for_run, cleanup_ohlcv_cache, load_ohlcv_csv,
+    )
 
     asset = row.get("asset", "")
     timeframe = row.get("timeframe", "")
@@ -114,21 +96,31 @@ def run_visualization(row: dict[str, Any], strategy_config: dict[str, Any]) -> d
     if not os.path.isfile(csv_path):
         return {"trades": [], "ohlcv": [], "error": f"OHLCV file not found: {csv_path}"}
 
-    df = pd.read_csv(csv_path)
-    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-    df = df[["timestamp", "open", "high", "low", "close", "volume"]].copy()
-    df.sort_values("timestamp", inplace=True)
-    df.reset_index(drop=True, inplace=True)
+    df = load_ohlcv_csv(csv_path)
 
     start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
     end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
 
     ec = strategy_config.get("execution_config", {})
+    atr_period = int(ec.get("atr_period", 14) or 14)
 
     def _v(key, default):
         """Get value from ec, coalescing None to default."""
         val = ec.get(key)
         return default if val is None else val
+
+    # Inject signal TF + daily companion into _OHLCV_CACHE
+    injected_keys = inject_ohlcv_for_run(
+        ds_module=_ds_module,
+        ohlcv_dir=settings.ohlcv_dir,
+        data_file=data_file,
+        asset=asset,
+        timeframe=timeframe,
+        start_date=start_dt,
+        end_date=end_dt,
+        atr_period=atr_period,
+        df_primary=df,
+    )
 
     request = _BacktestRequest(
         initial_balance=float(_v("initial_balance", 10000)),
@@ -154,16 +146,16 @@ def run_visualization(row: dict[str, Any], strategy_config: dict[str, Any]) -> d
         execution_config=ec,
     )
 
-    # Run backtest with OHLCV monkeypatch and stdout suppressed
+    # Run backtest with stdout suppressed
     devnull = open(os.devnull, "w")
     old_stdout = sys.stdout
     sys.stdout = devnull
     try:
-        with _inject_ohlcv(df):
-            result = _run_backtest(request)
+        result = _run_backtest(request)
     finally:
         sys.stdout = old_stdout
         devnull.close()
+        cleanup_ohlcv_cache(_ds_module, injected_keys)
 
     _Position.positions.clear()
 

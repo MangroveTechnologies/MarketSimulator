@@ -162,7 +162,8 @@ def execute_sweep_job(
             logger.warning("Could not connect to Redis: %s", exc)
 
     # Load backtest function and OHLCV data
-    _df_cache: dict[str, Any] = {}  # dataset_key -> DataFrame
+    _df_cache: dict[str, Any] = {}       # dataset_key -> primary DataFrame
+    _daily_cache: dict[str, Any] = {}    # dataset_key -> daily companion DataFrame
 
     if backtest_fn is None:
         _suppress_engine_output()
@@ -199,39 +200,50 @@ def execute_sweep_job(
 
         try:
             if _use_mangrove:
+                from experiment_server.services.ohlcv_utils import (
+                    inject_ohlcv_for_run, load_ohlcv_csv,
+                    companion_daily_filename,
+                )
+
                 # Load OHLCV data (once per dataset, cached)
                 dk = run.dataset_key
+                ohlcv_dir = os.environ.get(
+                    "EXP_OHLCV_DIR", "/app/MarketSimulator/data/ohlcv",
+                )
                 if dk not in _df_cache:
-                    ohlcv_dir = os.environ.get(
-                        "EXP_OHLCV_DIR", "/app/MarketSimulator/data/ohlcv",
+                    _df_cache[dk] = load_ohlcv_csv(
+                        os.path.join(ohlcv_dir, run.data_file)
                     )
-                    csv_path = os.path.join(ohlcv_dir, run.data_file)
-                    df = pd.read_csv(csv_path)
-                    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-                    df = df[["timestamp", "open", "high", "low", "close", "volume"]].copy()
-                    df.sort_values("timestamp", inplace=True)
-                    df.reset_index(drop=True, inplace=True)
-                    _df_cache[dk] = df
-
-                df_local = _df_cache[dk]
+                    # Pre-load daily companion (if sub-daily)
+                    if run.timeframe.lower() != "1d":
+                        companion = companion_daily_filename(run.data_file)
+                        companion_path = os.path.join(ohlcv_dir, companion)
+                        if os.path.isfile(companion_path):
+                            _daily_cache[dk] = load_ohlcv_csv(companion_path)
 
                 # Parse dates from the run spec
                 from datetime import datetime as dt
                 start_dt = dt.strptime(run.start_date, "%Y-%m-%d")
                 end_dt = dt.strptime(run.end_date, "%Y-%m-%d")
 
-                # Inject into OHLCV cache
-                asset_symbol = run.asset.upper()
-                cache_key = (
-                    "coinapi", asset_symbol,
-                    run.timeframe.lower(),
-                    start_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    end_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                ec = run.exec_config
+                atr_period = int(ec.get("atr_period", 14))
+
+                # Inject both signal TF and daily into _OHLCV_CACHE
+                inject_ohlcv_for_run(
+                    ds_module=ds_module,
+                    ohlcv_dir=ohlcv_dir,
+                    data_file=run.data_file,
+                    asset=run.asset,
+                    timeframe=run.timeframe,
+                    start_date=start_dt,
+                    end_date=end_dt,
+                    atr_period=atr_period,
+                    df_primary=_df_cache[dk],
+                    df_daily=_daily_cache.get(dk),
                 )
-                ds_module._OHLCV_CACHE[cache_key] = df_local
 
                 # Build BacktestRequest
-                ec = run.exec_config
                 request = BacktestRequest(
                     initial_balance=float(ec.get("initial_balance", 10000)),
                     min_balance_threshold=float(ec.get("min_balance_threshold", 0.1)),
@@ -248,7 +260,7 @@ def execute_sweep_job(
                     cooldown_bars=int(ec.get("cooldown_bars", 24)),
                     daily_momentum_limit=float(ec.get("daily_momentum_limit", 3)),
                     weekly_momentum_limit=float(ec.get("weekly_momentum_limit", 3)),
-                    asset=f"{asset_symbol}-USDT",
+                    asset=f"{run.asset.upper()}-USDT",
                     interval=run.timeframe,
                     start_date=start_dt,
                     end_date=end_dt,

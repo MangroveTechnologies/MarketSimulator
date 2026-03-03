@@ -178,6 +178,11 @@ def execute_sweep_job(
 
         import pandas as pd
 
+        from experiment_server.services.ohlcv_utils import (
+            inject_ohlcv_for_run, load_ohlcv_csv,
+            companion_daily_filename,
+        )
+
         _use_mangrove = True
     else:
         _use_mangrove = False
@@ -200,11 +205,6 @@ def execute_sweep_job(
 
         try:
             if _use_mangrove:
-                from experiment_server.services.ohlcv_utils import (
-                    inject_ohlcv_for_run, load_ohlcv_csv,
-                    companion_daily_filename,
-                )
-
                 # Load OHLCV data (once per dataset, cached)
                 dk = run.dataset_key
                 ohlcv_dir = os.environ.get(
@@ -222,9 +222,8 @@ def execute_sweep_job(
                             _daily_cache[dk] = load_ohlcv_csv(companion_path)
 
                 # Parse dates from the run spec
-                from datetime import datetime as dt
-                start_dt = dt.strptime(run.start_date, "%Y-%m-%d")
-                end_dt = dt.strptime(run.end_date, "%Y-%m-%d")
+                start_dt = datetime.strptime(run.start_date, "%Y-%m-%d")
+                end_dt = datetime.strptime(run.end_date, "%Y-%m-%d")
 
                 ec = run.exec_config
                 atr_period = int(ec.get("atr_period", 14))

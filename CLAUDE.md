@@ -44,7 +44,8 @@ The `mangrove-sweep` container mounts three sibling projects:
 2. `pip install` runtime deps (fastapi, duckdb, etc.)
 3. `pip install --no-deps /app/MangroveKnowledgeBase` (latest source, not stale PyPI)
 4. `python scripts/generate_signals_metadata.py` (generates `data/signals_metadata.json` from mangrove_kb)
-5. `uvicorn experiment_server.app:app` on port 5100
+5. `python scripts/generate_daily_companions.py` (resamples sub-daily CSVs to daily for ATR)
+6. `uvicorn experiment_server.app:app` on port 5100
 
 ## Key Conventions
 
@@ -53,7 +54,8 @@ The `mangrove-sweep` container mounts three sibling projects:
 - **Seed determinism** -- `experiment_seed * 1000000 + run_index` for per-run RNG
 - **Logger suppression** -- backtesting/strategies/managers/positions loggers set to WARNING
 - **stdout suppression** -- backtest engine print() redirected to /dev/null during sweep
-- **OHLCV injection** -- sweep workers inject local CSV into `_OHLCV_CACHE` (in-process dict in `data_source.py`); visualize service monkeypatches `MarketDataLoader.load()`
+- **OHLCV injection** -- both sweep workers and visualize service inject local CSVs (signal TF + daily companion) into `_OHLCV_CACHE` via shared utility (`ohlcv_utils.py`). Cache keys match the engine's exact lookup pattern (asset with -USDT, ATR pre-history date offsets). No monkeypatching, no CoinAPI calls.
+- **Daily companions** -- generated at startup by `scripts/generate_daily_companions.py` (resamples sub-daily CSVs to daily OHLCV). Required because the engine needs both signal TF and 1D for ATR calculations.
 - **Code version** -- provenance tracks both repos: `ms:<hash> ai:<hash>`
 - **Signals metadata** -- generated at startup from `mangrove_kb` source, never a static copy
 
@@ -63,7 +65,7 @@ The `mangrove-sweep` container mounts three sibling projects:
 config/                     # Trading defaults (moved from data/)
   trading_defaults.json
 data/                       # Runtime data (gitignored)
-  ohlcv/                    # Input OHLCV CSVs (7 files, 6 symbols)
+  ohlcv/                    # Input OHLCV CSVs + daily companions (auto-generated)
   experiments/              # Experiment results (Parquet)
   signals_metadata.json     # Generated at startup
 docker-compose.yml          # Container definition

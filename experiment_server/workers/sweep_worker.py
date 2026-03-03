@@ -168,8 +168,6 @@ def execute_sweep_job(
     if backtest_fn is None:
         _suppress_engine_output()
         sys.path.insert(0, "/app")
-        # Use sweep config to avoid GCP secret resolution (backtest needs no external services)
-        os.environ["ENVIRONMENT"] = "sweep"
         # Suppress stdout from the backtest engine (print-heavy)
         _devnull = open(os.devnull, "w")
 

@@ -1,7 +1,9 @@
 services:
   experiment-server:
     container_name: mangrove-sweep
-    image: mangroveai-mangrove-app
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "5100:5100"
@@ -11,7 +13,12 @@ services:
       - ../MangroveAI/src/MangroveAI:/app/MangroveAI
       - ../MangroveAI/.git:/app/MangroveAI/.git:ro
       - ../MangroveKnowledgeBase:/app/MangroveKnowledgeBase
-      - .:/app/MarketSimulator
+      # Dev overrides: mount source code so changes reflect without rebuild
+      - ./experiment_server:/app/MarketSimulator/experiment_server
+      - ./scripts:/app/MarketSimulator/scripts
+      - ./config:/app/MarketSimulator/config
+      - ./data/ohlcv:/app/MarketSimulator/data/ohlcv
+      - ./.git:/app/MarketSimulator/.git:ro
       - ${HOME}/.config/gcloud/application_default_credentials.json:/tmp/keys/google_credentials.json:ro
     environment:
       - OMP_NUM_THREADS=1

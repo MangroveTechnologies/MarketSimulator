@@ -33,7 +33,7 @@ function App() {
       <div className="min-h-screen bg-mg-bg text-mg-text">
         {/* Navigation */}
         <nav className="border-b border-mg-border bg-mg-surface sticky top-0 z-50">
-          <div className="max-w-[1440px] mx-auto px-6 flex items-center justify-between h-14">
+          <div className="mx-auto px-8 sm:px-12 lg:px-16 flex items-center justify-between h-14">
             <div className="flex items-center gap-8">
               <NavLink to="/explore" className="flex items-center gap-3 shrink-0">
                 <img src="/mangrove-mark.svg" alt="Mangrove" className="h-7 w-auto" />
@@ -87,7 +87,7 @@ function App() {
         </nav>
 
         {/* Content */}
-        <main className="max-w-[1440px] mx-auto px-8 py-6">
+        <main className="mx-auto px-8 sm:px-12 lg:px-16 py-8">
           <Routes>
             <Route path="/" element={<Navigate to="/explore" replace />} />
             <Route path="/configure" element={<ConfigureView />} />

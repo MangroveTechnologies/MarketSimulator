@@ -121,12 +121,24 @@ def list_experiments() -> list[ExperimentConfig]:
                     data = json.load(f)
                 config = ExperimentConfig(**data)
 
-                # Auto-complete check
+                # Auto-status check for "running" experiments
                 if config.status == "running" and config.total_runs:
                     done = len(count_completed(_experiment_dir(config.experiment_id)))
                     if done >= config.total_runs:
                         config.status = "completed"
                         _save_config(config)
+                    elif done == 0 and config.created_at:
+                        # No results after 5 min = workers died, mark failed
+                        try:
+                            created = datetime.fromisoformat(config.created_at)
+                            if created.tzinfo is None:
+                                created = created.replace(tzinfo=timezone.utc)
+                            elapsed = (datetime.now(timezone.utc) - created).total_seconds()
+                            if elapsed > 300:
+                                config.status = "failed"
+                                _save_config(config)
+                        except Exception:
+                            pass
 
                 results.append(config)
             except Exception:
@@ -344,10 +356,21 @@ def get_experiment_progress(experiment_id: str) -> dict[str, Any]:
     total = config.total_runs or 0
     done = len(completed_indices)
 
-    # Auto-complete: if all runs finished and status is still "running", mark completed
-    if config.status == "running" and total > 0 and done >= total:
-        config.status = "completed"
-        _save_config(config)
+    # Auto-status: completed or failed
+    if config.status == "running" and total > 0:
+        if done >= total:
+            config.status = "completed"
+            _save_config(config)
+        elif done == 0 and config.created_at:
+            try:
+                created = datetime.fromisoformat(config.created_at)
+                if created.tzinfo is None:
+                    created = created.replace(tzinfo=timezone.utc)
+                if (datetime.now(timezone.utc) - created).total_seconds() > 300:
+                    config.status = "failed"
+                    _save_config(config)
+            except Exception:
+                pass
 
     return {
         "experiment_id": experiment_id,

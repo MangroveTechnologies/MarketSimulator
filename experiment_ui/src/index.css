@@ -18,15 +18,15 @@
 }
 
 [data-theme="light"] {
-  --theme-bg: #F5F6F8;
+  --theme-bg: #F3F4F6;
   --theme-surface: #FFFFFF;
-  --theme-elevated: #F0F1F3;
-  --theme-hover: #E8E9EB;
-  --theme-border: #D1D5DB;
-  --theme-border-subtle: #E5E7EB;
-  --theme-text: #1F2937;
-  --theme-dim: #6B7280;
-  --theme-muted: #9CA3AF;
+  --theme-elevated: #F9FAFB;
+  --theme-hover: #F3F4F6;
+  --theme-border: #C4C9D4;
+  --theme-border-subtle: #D1D5DB;
+  --theme-text: #111827;
+  --theme-dim: #4B5563;
+  --theme-muted: #6B7280;
 }
 
 /* ── Tailwind v4 design tokens ────────────────────────────────── */
@@ -60,7 +60,7 @@
 
 /* ── Base styles ──────────────────────────────────────────────── */
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   font-family: var(--font-body);
@@ -101,11 +101,19 @@ h1, h2, h3 {
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
   border-radius: 0.625rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+}
+[data-theme="light"] .card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.08);
 }
 .card-elevated {
   background: var(--theme-elevated);
   border: 1px solid var(--theme-border);
   border-radius: 0.625rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+}
+[data-theme="light"] .card-elevated {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.08);
 }
 
 .row-border { border-bottom: 1px solid var(--theme-border); }

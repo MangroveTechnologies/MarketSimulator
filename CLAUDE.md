@@ -94,6 +94,19 @@ Post-simulation metrics computed in `MangroveAI/utils/metrics.py`:
 
 The visualize endpoint re-runs backtests and returns **fresh metrics** (not stored Parquet values).
 
+## Frontend Verification (MANDATORY)
+
+When making ANY frontend change, you MUST verify it works before claiming it's fixed:
+
+1. `docker compose up --build -d` (single command builds frontend + launches server)
+2. Use Playwright to navigate to the page (`browser_navigate`)
+3. Use `browser_evaluate` to inspect computed styles (padding, margin, width, etc.)
+4. Use `browser_take_screenshot` to visually confirm
+5. Test at multiple viewport widths (480, 768, 1280, 1440)
+6. Only THEN tell the user it's ready
+
+Never skip this. Never eyeball the code and assume it works.
+
 ## What NOT to Do
 
 - Don't keep static copies of `signals_metadata.json` -- it's generated at startup
@@ -102,3 +115,6 @@ The visualize endpoint re-runs backtests and returns **fresh metrics** (not stor
 - Don't change `EXECUTION_CONFIG` in sweep scripts without documenting why (it affects all results)
 - Don't run the benchmark without MangroveAI postgres running
 - Don't commit anything under `data/`, `venv/`, `experiment_ui_dist/`, or `__pycache__/`
+- Don't claim CSS/layout changes work without verifying computed styles via Playwright
+- Don't push commits before verifying the change works
+- Don't work around expired credentials -- ask the user to re-auth
